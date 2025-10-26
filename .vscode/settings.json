@@ -1,0 +1,43 @@
+{
+    // Ignorar arquivos e pastas pesadas
+    "files.exclude": {
+        "**/__pycache__": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/.git": true,
+        "**/__pycache__": true,
+        "**/.venv": true,
+        "data/**": true,
+    },
+    "files.watcherExclude": {
+        "**/.git/**": true,
+        "**/node_modules/**": true,
+        "**/__pycache__/**": true,
+        "**/.venv/**": true,
+        "**/env/**": true,
+        "data/**": true,
+        "**/*.zip": true,
+        "**/*.json": true,
+        "**/*.ndjson": true,
+        "**/*.csv": true
+    },
+    "files.maxFileSizeMB": 5,
+    "files.maxMemoryForLargeFilesMB": 8,
+
+    // Python (Pylance) - desativa análise de diretórios pesados
+    "python.analysis.exclude": [
+        "**/.venv",
+        "**/.env",
+        "**/__pycache__",
+        "**/downloads",
+        "data/**",
+        "**/output"
+    ],
+    "python.analysis.autoImportCompletions": false,
+    "python.analysis.memory.keepLibraryAst": false,
+    "python.analysis.indexing": false,
+
+    // 📦 Cache local do analisador (mantém fora do workspace principal)
+    "python.analysis.cacheFolderPath": ".vscode/.python_analysis_cache"
+}

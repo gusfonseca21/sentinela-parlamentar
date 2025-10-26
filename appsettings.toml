@@ -1,0 +1,18 @@
+[FLOW]
+MAX_RUNNERS = 16 # Num. de threads abertas
+
+[TSE]
+BASE_URL = "https://cdn.tse.jus.br/estatistica/sead/odsele/"
+RETRIES = 5
+RETRY_DELAY = 5 # Segundos
+TIMEOUT = 120 # Segundos
+CACHE_POLICY = "INPUTS" # Padrão = INPUTS
+CACHE_EXPIRATION = 90 # Dias
+
+[CAMARA]
+REST_BASE_URL = "https://dadosabertos.camara.leg.br/api/v2/"
+RETRIES = 30
+RETRY_DELAY = 5 # Segundos
+TIMEOUT = 120 # Segundos
+CONCURRENCY = 10 # Número máximo de requisições por segundo
+TYPES_PROPOSICOES = "PL,PLP,PEC,MPV,MP,PDL,PRC" # Tipos de proposições a serem buscadas
