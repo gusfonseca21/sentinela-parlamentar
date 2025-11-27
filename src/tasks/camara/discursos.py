@@ -11,18 +11,18 @@ from config.loader import load_config
 
 APP_SETTINGS = load_config()
 
-def urls_discursos(deputados_ids: list[int], date: date) -> list[str]:
-    return [f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/discursos?dataInicio={date}&itens=1000" for id in deputados_ids]
+def urls_discursos(deputados_ids: list[int], start_date: date) -> list[str]:
+    return [f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/discursos?dataInicio={start_date}&itens=1000" for id in deputados_ids]
 
 @task(
     retries=APP_SETTINGS.CAMARA.RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TIMEOUT
 )
-async def extract_discursos_deputados(deputados_ids: list[int], date: date, out_dir: str | Path = "data/camara") -> str:
+async def extract_discursos_deputados(deputados_ids: list[int], start_date: date, out_dir: str | Path = "data/camara") -> str:
     logger = get_run_logger()
 
-    urls = urls_discursos(deputados_ids, date)
+    urls = urls_discursos(deputados_ids, start_date)
     logger.info(f"Câmara: buscando discursos de {len(urls)} deputados")
 
     jsons = await fetch_json_many_async(

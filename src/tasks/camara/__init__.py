@@ -5,3 +5,4 @@ from .frentes_membros import extract_frentes_membros
 from .frentes import extract_frentes
 from .legislatura import extract_legislatura
 from .discursos import extract_discursos_deputados
+from .despesas import extract_despesas_deputados

@@ -1,4 +1,3 @@
-- Continuar em discursos fazendo o artefato retornar o numero total de discursos feitos pelo deputado e o num de paginas
-- Loop download de anos em assiduidade
-- No br_data temos ELECTIONS_YEARS, que está chumbado os valores 2018 e 2022. Buscar esses dados dinamicamente
 - Revisar warnings sobre o cache
+- Refatorar download assiduidade deputados. Baixar somente o do ano atual ou de todos os anos da legislatura.
+- Criar artefato despesas deputados

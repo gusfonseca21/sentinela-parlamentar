@@ -6,7 +6,7 @@ from prefect.artifacts import create_progress_artifact
 from datetime import timedelta
 
 from utils.io import download_stream
-from utils.br_data import BR_STATES, ELECTIONS_YEARS
+from utils.br_data import BR_STATES, calculate_election_years
 from config.loader import load_config, CACHE_POLICY_MAP
 
 APP_SETTINGS = load_config()
@@ -15,7 +15,7 @@ APP_SETTINGS = load_config()
 REDES_SOCIAIS_ENDPOINTS = {
     f"redes_sociais_{year}_{state}": f"{APP_SETTINGS.TSE.BASE_URL}consulta_cand/rede_social_candidato_{year}_{state}.zip"
     for state in BR_STATES
-    for year in ELECTIONS_YEARS
+    for year in calculate_election_years()
 }
 
 TSE_ENDPOINTS = {

@@ -8,8 +8,7 @@ from config.loader import load_config
 
 APP_SETTINGS = load_config()
 
-def frentes_url(legislatura: dict) -> str:
-    id_legislatura = legislatura["dados"][0]["id"]
+def frentes_url(id_legislatura: int) -> str:
     return f"{APP_SETTINGS.CAMARA.REST_BASE_URL}/frentes?idLegislatura={id_legislatura}"
 
 @task(
@@ -17,9 +16,9 @@ def frentes_url(legislatura: dict) -> str:
     retry_delay_seconds=APP_SETTINGS.CAMARA.RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TIMEOUT
 )
-async def extract_frentes(legislatura: dict, out_dir: str | Path = "data/camara") -> list[str]:
+async def extract_frentes(id_legislatura: int, out_dir: str | Path = "data/camara") -> list[str]:
     logger = get_run_logger()
-    url = frentes_url(legislatura)
+    url = frentes_url(id_legislatura)
     dest = Path(out_dir) / "frentes.ndjson"
     logger.info(f"Congresso: buscando Frentes de {url} -> {dest}")
     
