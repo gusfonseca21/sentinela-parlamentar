@@ -17,8 +17,7 @@ PORTAL_BASE_URL = "https://www.camara.leg.br/"
 RETRIES = 0
 RETRY_DELAY = 5 # Segundos
 TIMEOUT = 1800 # Segundos
-CONCURRENCY = 10 # Número máximo de requisições por segundo
+LIMIT = 60 # Número máximo de requisições por segundo
 TYPES_PROPOSICOES = "PL,PLP,PEC,MPV,MP,PDL,PRC" # Tipos de proposições a serem buscadas
 ASSIDUIDADE_CACHE_POLICY = "INPUTS"
 ASSIDUIDADE_CACHE_EXPIRATION = 90 # Dias
-

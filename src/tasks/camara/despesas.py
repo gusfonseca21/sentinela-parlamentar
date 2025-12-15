@@ -1,22 +1,27 @@
-from pathlib import Path
-from prefect import task, get_run_logger
-from prefect.artifacts import acreate_table_artifact
-from typing import cast
-from urllib.parse import urlparse, parse_qs
 from datetime import date, timedelta
+from pathlib import Path
+from typing import cast
 
-from utils.io import fetch_json_many_async, save_ndjson
-from utils.url import get_path_parameter_value
+from prefect import get_run_logger, task
+from prefect.artifacts import acreate_table_artifact
+
 from config.loader import load_config
+from utils.io import fetch_json_many_async, save_ndjson
 
 APP_SETTINGS = load_config()
 
-def urls_despesas(deputados_ids: list[int], start_date: date, legislatura: dict) -> list[str]:
+
+def urls_despesas(
+    deputados_ids: list[int], start_date: date, legislatura: dict
+) -> list[str]:
     id_legislatura = legislatura.get("dados", [])[0].get("id")
     today = date.today()
     # Se start_date for menor que o ano atual, irá baixar todos os dados de despesas
-    if start_date.year <  today.year:
-        return [f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?idLegislatura={id_legislatura}&itens=1000" for id in deputados_ids]
+    if start_date.year < today.year:
+        return [
+            f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?idLegislatura={id_legislatura}&itens=1000"
+            for id in deputados_ids
+        ]
     else:
         # O Deputado tem 3 meses para apresentar a nota
         curr_month = today.month
@@ -24,15 +29,23 @@ def urls_despesas(deputados_ids: list[int], start_date: date, legislatura: dict)
         three_months_urls = set()
         for id in deputados_ids:
             for month in range(three_months_back.month, curr_month + 1):
-                three_months_urls.add(f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?ano={today.year}&mes={month}&itens=1000")
+                three_months_urls.add(
+                    f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?ano={today.year}&mes={month}&itens=1000"
+                )
         return list(three_months_urls)
+
 
 @task(
     retries=APP_SETTINGS.CAMARA.RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.RETRY_DELAY,
-    timeout_seconds=APP_SETTINGS.CAMARA.TIMEOUT
+    timeout_seconds=APP_SETTINGS.CAMARA.TIMEOUT,
 )
-async def extract_despesas_deputados(deputados_ids: list[int], start_date: date, legislatura: dict, out_dir: str | Path = "data/camara") -> str:
+async def extract_despesas_deputados(
+    deputados_ids: list[int],
+    start_date: date,
+    legislatura: dict,
+    out_dir: str | Path = "data/camara",
+) -> str:
     logger = get_run_logger()
 
     urls = urls_despesas(deputados_ids, start_date, legislatura)
@@ -40,20 +53,18 @@ async def extract_despesas_deputados(deputados_ids: list[int], start_date: date,
 
     jsons = await fetch_json_many_async(
         urls=urls,
-        concurrency=APP_SETTINGS.CAMARA.CONCURRENCY,
+        limit=APP_SETTINGS.CAMARA.LIMIT,
         timeout=APP_SETTINGS.CAMARA.TIMEOUT,
-        follow_pagination=True
+        follow_pagination=True,
     )
 
     # Gerando artefato para validação dos dados
-    artifact_data = [{
-        "Total de registros": len(jsons)
-    }]
-    
+    artifact_data = [{"Total de registros": len(jsons)}]
+
     await acreate_table_artifact(
         key="despesas-deputados",
         table=artifact_data,
-        description="Despesas de deputados"
+        description="Despesas de deputados",
     )
 
     dest = Path(out_dir) / "despesas.ndjson"

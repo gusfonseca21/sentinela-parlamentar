@@ -1,5 +1,6 @@
 from typing import Any
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+
 
 def get_query_param_value(url: str, param_name: str, default_value: str) -> Any:
     """
@@ -9,6 +10,7 @@ def get_query_param_value(url: str, param_name: str, default_value: str) -> Any:
     params = parse_qs(parsed_url.query)
     param_value = params.get(param_name, [default_value])[0]
     return param_value
+
 
 def alter_query_param_value(base_url: str, param_name: str, new_value) -> str:
     """
@@ -22,6 +24,7 @@ def alter_query_param_value(base_url: str, param_name: str, new_value) -> str:
     new_query = urlencode(base_params, doseq=True)
     new_url = urlunparse(parsed_base_url._replace(query=new_query))
     return new_url
+
 
 def get_path_parameter_value(url: str, param_name: str) -> Any:
     path_parts = urlparse(url).path.strip("/").split("/")

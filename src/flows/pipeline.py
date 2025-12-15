@@ -1,29 +1,29 @@
-from prefect import flow, get_run_logger
-from prefect.task_runners import ThreadPoolTaskRunner
-from prefect.futures import resolve_futures_to_results
 from datetime import date, datetime, timedelta
 from typing import Any, cast
-from pathlib import Path
 
-from tasks.tse import TSE_ENDPOINTS, extract_tse
-from tasks import camara
+from prefect import flow, get_run_logger
+from prefect.futures import resolve_futures_to_results
+from prefect.task_runners import ThreadPoolTaskRunner
 
-from utils.io import merge_ndjson
-from utils.file import keep_only_files
 from config.loader import load_config
+from tasks import camara
+from tasks.tse import TSE_ENDPOINTS, extract_tse
+from utils.file import keep_only_files
 
 APP_SETTINGS = load_config()
 
 # IMPORTAR TASKS TSE, CONGRESSO, SENADO ETC...
 
+
 @flow(
-    task_runner=ThreadPoolTaskRunner(max_workers=APP_SETTINGS.FLOW.MAX_RUNNERS), # type: ignore
-    log_prints=True
-) 
+    task_runner=ThreadPoolTaskRunner(max_workers=APP_SETTINGS.FLOW.MAX_RUNNERS),  # type: ignore
+    log_prints=True,
+)
 async def pipeline(
-    start_date: date = datetime.now().date() - timedelta(days=APP_SETTINGS.FLOW.DATE_LOOKBACK),
+    start_date: date = datetime.now().date()
+    - timedelta(days=APP_SETTINGS.FLOW.DATE_LOOKBACK),
     end_date: date = datetime.now().date(),
-    refresh_cache: bool = False
+    refresh_cache: bool = False,
 ):
     logger = get_run_logger()
     logger.info("Iniciando pipeline")
@@ -33,7 +33,7 @@ async def pipeline(
     # tse_fs = [
     #     cast(Any, extract_tse)
     #     .with_options(refresh_cache=refresh_cache)
-    #     .submit(name, url, tse_data_path) 
+    #     .submit(name, url, tse_data_path)
     #     for name, url in TSE_ENDPOINTS.items()
     # ]
     # resolve_futures_to_results(tse_fs)
@@ -45,32 +45,43 @@ async def pipeline(
     id_legislatura = legislatura["dados"][0]["id"]
 
     resolve_futures_to_results([deputados_f])
-    assiduidade_fs = camara.extract_assiduidade_deputados.submit(cast(list[int], deputados_f), start_date, end_date)
+    assiduidade_fs = camara.extract_assiduidade_deputados.submit(
+        cast(list[int], deputados_f), start_date, end_date
+    )
 
     frentes_f = camara.extract_frentes.submit(id_legislatura)
     frentes_membros_f = camara.extract_frentes_membros.submit(cast(Any, frentes_f))
 
     resolve_futures_to_results([frentes_membros_f])
-    detalhes_deputados_fs = camara.extract_detalhes_deputados.submit(cast(list[int], deputados_f))
+    detalhes_deputados_fs = camara.extract_detalhes_deputados.submit(
+        cast(list[int], deputados_f)
+    )
 
     resolve_futures_to_results([detalhes_deputados_fs])
-    discursos_deputados_fs = camara.extract_discursos_deputados.submit(cast(list[int], deputados_f), start_date)
+    discursos_deputados_fs = camara.extract_discursos_deputados.submit(
+        cast(list[int], deputados_f), start_date
+    )
 
     resolve_futures_to_results([discursos_deputados_fs])
-    despesas_deputados_fs = camara.extract_despesas_deputados.submit(cast(list[int], deputados_f), start_date, legislatura)
+    despesas_deputados_fs = camara.extract_despesas_deputados.submit(
+        cast(list[int], deputados_f), start_date, legislatura
+    )
 
-    return resolve_futures_to_results({
-        # "tse": tse_fs,
-        "congresso_deputados": deputados_f,
-        "congresso_assiduidade": assiduidade_fs,
-        "congresso_frentes": frentes_f,
-        "congresso_frentes_membros": frentes_membros_f,
-        "congresso_detalhes_deputados": detalhes_deputados_fs,
-        "congresso_discurso_deputados": discursos_deputados_fs,
-        "congresso_despesas_deputados": despesas_deputados_fs
-    })
+    return resolve_futures_to_results(
+        {
+            # "tse": tse_fs,
+            "congresso_deputados": deputados_f,
+            "congresso_assiduidade": assiduidade_fs,
+            "congresso_frentes": frentes_f,
+            "congresso_frentes_membros": frentes_membros_f,
+            "congresso_detalhes_deputados": detalhes_deputados_fs,
+            "congresso_discurso_deputados": discursos_deputados_fs,
+            "congresso_despesas_deputados": despesas_deputados_fs,
+        }
+    )
+
 
 if __name__ == "__main__":
-    pipeline.serve( # type: ignore
+    pipeline.serve(  # type: ignore
         name="deploy-1"
     )

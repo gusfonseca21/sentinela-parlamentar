@@ -1,13 +1,14 @@
+from datetime import timedelta
 from pathlib import Path
 from typing import cast
 from uuid import UUID
-from prefect import task, get_run_logger
-from prefect.artifacts import create_progress_artifact
-from datetime import timedelta
 
-from utils.io import download_stream
+from prefect import get_run_logger, task
+from prefect.artifacts import create_progress_artifact
+
+from config.loader import CACHE_POLICY_MAP, load_config
 from utils.br_data import BR_STATES, calculate_election_years
-from config.loader import load_config, CACHE_POLICY_MAP
+from utils.io import download_stream
 
 APP_SETTINGS = load_config()
 
@@ -24,10 +25,11 @@ TSE_ENDPOINTS = {
     "prestaca_contas_2018": f"{APP_SETTINGS.TSE.BASE_URL}prestacao_contas/prestacao_de_contas_eleitorais_candidatos_2018.zip",
     "prestacao_contas_2022": f"{APP_SETTINGS.TSE.BASE_URL}prestacao_contas/prestacao_de_contas_eleitorais_candidatos_2022.zip",
     "resultado_eleicao_2018": f"{APP_SETTINGS.TSE.BASE_URL}votacao_candidato_munzona/votacao_candidato_munzona_2018.zip",
-    "resultado_eleicao_2022": f"{APP_SETTINGS.TSE.BASE_URL}votacao_candidato_munzona/votacao_candidato_munzona_2022.zip"
+    "resultado_eleicao_2022": f"{APP_SETTINGS.TSE.BASE_URL}votacao_candidato_munzona/votacao_candidato_munzona_2022.zip",
 }
 
 TSE_ENDPOINTS = TSE_ENDPOINTS | REDES_SOCIAIS_ENDPOINTS
+
 
 @task(
     task_run_name="extract_tse_{name}",
@@ -36,18 +38,19 @@ TSE_ENDPOINTS = TSE_ENDPOINTS | REDES_SOCIAIS_ENDPOINTS
     timeout_seconds=APP_SETTINGS.TSE.TIMEOUT,
     cache_policy=CACHE_POLICY_MAP[APP_SETTINGS.TSE.CACHE_POLICY],
     cache_expiration=timedelta(days=APP_SETTINGS.TSE.CACHE_EXPIRATION),
-    log_prints=True
+    log_prints=True,
 )
 def extract_tse(name: str, url: str, out_dir: str = "data/tse") -> str:
     logger = get_run_logger()
 
     progress_id = create_progress_artifact(
-        progress=0.0,
-        description=f"Download do arquivo {name}, do TSE"
+        progress=0.0, description=f"Download do arquivo {name}, do TSE"
     )
 
     dest = Path(out_dir) / f"{name}.zip"
     logger.info(f"Fazendo download  do endpoint TSE '{url}' -> {dest}")
-    dest_path = download_stream(url, dest, unzip=True, progress_artifact_id=cast(UUID, progress_id))
+    dest_path = download_stream(
+        url, dest, unzip=True, progress_artifact_id=cast(UUID, progress_id)
+    )
 
     return dest_path

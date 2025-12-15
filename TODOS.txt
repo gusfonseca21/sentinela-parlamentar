@@ -1,3 +1,7 @@
 - Implementar fetch de proposições Câmara.
     - Pegar pela URL https://dadosabertos.camara.leg.br/api/v2/proposicoes?dataInicio=2025-12-02&dataFim=2025-12-02&ordem=ASC&ordenarPor=id&pagina=2&itens=100
     - Já irá trazer as proposições que foram votadas e que tiveram alteração no status, não é necessário fazer outras etapas para complementar as proposições baixadas
+
+
+
+- A função fetch_many_jsons_async foi refatorada. Verificar ela direitinho, junto com a mudança de CONCURRENCY para LIMIT nas tasks da Câmara

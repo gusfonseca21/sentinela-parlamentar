@@ -1,35 +1,41 @@
-from pathlib import Path
-from prefect import task, get_run_logger
-from prefect.artifacts import acreate_table_artifact
-from typing import cast
 import re
-from selectolax.parser import HTMLParser
-from datetime import date, timedelta
-from prefect.utilities.hashing import hash_objects
+from datetime import date
+from pathlib import Path
+from typing import cast
 
+from prefect import get_run_logger, task
+from prefect.artifacts import acreate_table_artifact
+from selectolax.parser import HTMLParser
+
+from config.loader import load_config
 from utils.io import fetch_html_many_async, save_ndjson
-from config.loader import load_config, CACHE_POLICY_MAP
 
 APP_SETTINGS = load_config()
 
-def assiduidade_urls(deputados_ids: list[int], start_date: date, end_date: date) -> list[str]:
+
+def assiduidade_urls(
+    deputados_ids: list[int], start_date: date, end_date: date
+) -> list[str]:
     urls = set()
     for id in deputados_ids:
         for year in range(start_date.year, end_date.year + 1):
-            urls.add(f"{APP_SETTINGS.CAMARA.PORTAL_BASE_URL}deputados/{id}/presenca-plenario/{year}")
+            urls.add(
+                f"{APP_SETTINGS.CAMARA.PORTAL_BASE_URL}deputados/{id}/presenca-plenario/{year}"
+            )
     return list(urls)
+
 
 @task(
     task_run_name="extract_assiduidade_deputados",
     retries=APP_SETTINGS.CAMARA.RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.RETRY_DELAY,
-    timeout_seconds=APP_SETTINGS.CAMARA.TIMEOUT
+    timeout_seconds=APP_SETTINGS.CAMARA.TIMEOUT,
 )
 async def extract_assiduidade_deputados(
-        deputados_ids: list[int],
-        start_date: date,
-        end_date: date,
-        out_dir: str | Path = "data/camara"
+    deputados_ids: list[int],
+    start_date: date,
+    end_date: date,
+    out_dir: str | Path = "data/camara",
 ) -> str:
     """
     Baixa páginas HTML com os dados sobre a assiduidade dos Deputados
@@ -40,12 +46,11 @@ async def extract_assiduidade_deputados(
     logger.info(f"Câmara: buscando assiduidade de {len(deputados_ids)}.")
 
     htmls = await fetch_html_many_async(
-        urls=urls,
-        concurrency=APP_SETTINGS.CAMARA.CONCURRENCY
+        urls=urls, concurrency=APP_SETTINGS.CAMARA.LIMIT
     )
-    
-    href_pattern = re.compile(r'https://www\.camara\.leg\.br/deputados/\d+')
-    id_ano_pattern= r'/deputados/(?P<id>\d+)\?.*ano=(?P<ano>\d+)'
+
+    href_pattern = re.compile(r"https://www\.camara\.leg\.br/deputados/\d+")
+    id_ano_pattern = r"/deputados/(?P<id>\d+)\?.*ano=(?P<ano>\d+)"
 
     # Montando os resultados JSON e o artefato
     artifact_data = []
@@ -59,22 +64,20 @@ async def extract_assiduidade_deputados(
                 if href_pattern.match(href):
                     match = re.search(id_ano_pattern, href)
                     if match:
-                        deputado_id = int(match.group('id'))
-                        year = int(match.group('ano'))
+                        deputado_id = int(match.group("id"))
+                        year = int(match.group("ano"))
 
-                        json_results.append({
-                            "deputado_id": deputado_id,
-                            "ano": year,
-                            "html": html
-                        })
+                        json_results.append(
+                            {"deputado_id": deputado_id, "ano": year, "html": html}
+                        )
 
-                        tables = tree.css('table.table.table-bordered')
+                        tables = tree.css("table.table.table-bordered")
                         name = tree.css_first("h1.titulo-internal")
                         name_text = name.text(strip=True) if name else None
                         artifact_row = {
                             "id": deputado_id,
                             "nome": name_text,
-                            "ano": year
+                            "ano": year,
                         }
                         if tables:
                             artifact_row["possui_dados"] = "Sim"
@@ -82,16 +85,16 @@ async def extract_assiduidade_deputados(
                             artifact_row["possui_dados"] = "Não"
                         artifact_data.append(artifact_row)
                     else:
-                        logger.warning(f"Não foram encontrados dados suficientes na página HTML")
+                        logger.warning(
+                            "Não foram encontrados dados suficientes na página HTML"
+                        )
             else:
                 logger.warning(f"O href {href} não é string")
 
     await acreate_table_artifact(
-        key=f"assiduidade",
-        table=artifact_data,
-        description="Assiduidade de deputados"
+        key="assiduidade", table=artifact_data, description="Assiduidade de deputados"
     )
 
-    dest = Path(out_dir) / f"assiduidade.ndjson"
+    dest = Path(out_dir) / "assiduidade.ndjson"
     dest_path = save_ndjson(json_results, dest)
     return dest_path

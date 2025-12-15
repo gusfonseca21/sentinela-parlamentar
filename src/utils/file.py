@@ -1,8 +1,9 @@
+import os
 from pathlib import Path
 from typing import Literal
-import os
 
 enabled_file_extensions = Literal["csv"]
+
 
 def keep_only_files(path: str | Path, file_ext: enabled_file_extensions):
     print("executou")
