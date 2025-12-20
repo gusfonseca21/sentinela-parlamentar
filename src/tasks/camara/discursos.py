@@ -6,7 +6,8 @@ from prefect import get_run_logger, task
 from prefect.artifacts import acreate_table_artifact
 
 from config.loader import load_config
-from utils.io import fetch_json_many_async, save_ndjson
+from utils.fetch_many_camara import fetch_many_camara
+from utils.io import save_ndjson
 from utils.url_utils import get_path_parameter_value
 
 APP_SETTINGS = load_config()
@@ -32,7 +33,7 @@ async def extract_discursos_deputados(
     urls = urls_discursos(deputados_ids, start_date)
     logger.info(f"Câmara: buscando discursos de {len(urls)} deputados")
 
-    jsons = await fetch_json_many_async(
+    jsons = await fetch_many_camara(
         urls=urls,
         limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
         follow_pagination=True,

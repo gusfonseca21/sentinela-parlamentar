@@ -2,7 +2,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 
-def get_query_param_value(url: str, param_name: str, default_value: str) -> Any:
+def get_query_param_value(url: str, param_name: str, default_value: str | int) -> Any:
     """
     Busca o valor de um parâmetro específico de uma URL. Se o parâmetro não estiver presente, retorna o valor padrão.
     """

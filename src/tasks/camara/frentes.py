@@ -5,7 +5,8 @@ from prefect import get_run_logger, task
 from prefect.artifacts import acreate_table_artifact
 
 from config.loader import load_config
-from utils.io import fetch_json_many_async, save_ndjson
+from utils.fetch_many_camara import fetch_many_camara
+from utils.io import save_ndjson
 
 APP_SETTINGS = load_config()
 
@@ -27,7 +28,7 @@ async def extract_frentes(
     dest = Path(out_dir) / "frentes.ndjson"
     logger.info(f"Congresso: buscando Frentes de {url} -> {dest}")
 
-    jsons = await fetch_json_many_async([url])
+    jsons = await fetch_many_camara([url])
     jsons = cast(list[dict], jsons)
 
     save_ndjson(jsons, dest)
