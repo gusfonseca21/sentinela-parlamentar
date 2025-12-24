@@ -46,7 +46,10 @@ async def extract_assiduidade_deputados(
     logger.info(f"Câmara: buscando assiduidade de {len(deputados_ids)}.")
 
     htmls = await fetch_html_many_async(
-        urls=urls, concurrency=APP_SETTINGS.CAMARA.FETCH_LIMIT, logger=logger
+        urls=urls,
+        limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
+        logger=logger,
+        max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
     )
 
     href_pattern = re.compile(r"https://www\.camara\.leg\.br/deputados/\d+")

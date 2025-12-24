@@ -10,7 +10,7 @@ from uuid import UUID
 
 import httpx
 
-from utils.log import get_prefect_logger_or_none
+from .log import get_prefect_logger_or_none
 
 
 # Garante que o caminho exista
@@ -134,10 +134,11 @@ def merge_ndjson(inputs: list[str | Path], dest: str | Path) -> str:
 async def fetch_html_many_async(
     urls: list[str],
     out_dir: str | Path | None = None,
-    concurrency: int = 10,
+    limit: int = 10,
     timeout: int = 1800,
+    max_retries: int = 10,
     logger: Any | None = None,
-) -> list[str | None] | str:
+) -> list[str | None]:
     """
     Faz o download de páginas HTML
     """
@@ -149,43 +150,52 @@ async def fetch_html_many_async(
         else:
             print(msg)
 
-    sem = asyncio.Semaphore(concurrency)
-    limits = httpx.Limits(max_connections=max(concurrency, 10))
+    sem = asyncio.Semaphore(limit)
     timeout_cfg = httpx.Timeout(timeout)
 
     ensure_dir(out_dir) if out_dir else None
 
     processed_urls = set()  # Evita processar a mesma URL duas vezes
 
-    downloaded_urls = 0
-
-    async def one(u: str, client: httpx.AsyncClient):
-        nonlocal downloaded_urls
-
+    async def fetch(u: str, client: httpx.AsyncClient):
         if u in processed_urls:
             return None
         processed_urls.add(u)
 
         async with sem:
-            log(f"Fazendo download da URL: {u}")
-            r = await client.get(u)
-            r.raise_for_status()
+            for attempt in range(max_retries):
+                try:
+                    log(f"Fazendo download da URL: {u}")
+                    r = await client.get(u)
+                    r.raise_for_status()
 
-            html_content = r.text
+                    html_content = r.text
 
-            # Salvar ou retornar o resultado atual
-            if out_dir:
-                # Nome do arquivo determinado pelo Hash da URL
-                name = hashlib.sha1(u.encode()).hexdigest() + ".html"
-                path = Path(out_dir) / name
-                with open(path, "w", encoding="utf-8") as f:
-                    f.write(html_content)
-                return str(path)  # Se salvar, retorna o caminho
+                    # Salvar ou retornar o resultado atual
+                    if out_dir:
+                        # Nome do arquivo determinado pelo Hash da URL
+                        name = hashlib.sha1(u.encode()).hexdigest() + ".html"
+                        path = Path(out_dir) / name
+                        with open(path, "w", encoding="utf-8") as f:
+                            f.write(html_content)
+                        return str(path)  # Se salvar, retorna o caminho
 
-            return html_content
+                    return html_content
 
-    async with httpx.AsyncClient(limits=limits, timeout=timeout_cfg) as client:
-        tasks = [one(u, client) for u in urls]
+                except Exception as e:
+                    if attempt < max_retries - 1:
+                        log(
+                            f"Um erro ocorreu ao baixar uma página HTML: {e}. TENTANDO NOVAMENTE. Tentativa: {attempt}"
+                        )
+                        await asyncio.sleep(2**attempt)
+                    else:
+                        log(
+                            f"Falha permanente ao baixar {u} após {max_retries} tentativas: {e}"
+                        )
+                        raise
+
+    async with httpx.AsyncClient(timeout=timeout_cfg, follow_redirects=True) as client:
+        tasks = [fetch(u, client) for u in urls]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         # Elimina os resultados inválidos (erro)
         valid_results = [
