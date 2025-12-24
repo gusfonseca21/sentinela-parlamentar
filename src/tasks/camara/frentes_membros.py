@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
 from prefect import get_run_logger, task
 from prefect.artifacts import acreate_table_artifact
@@ -38,7 +38,17 @@ async def extract_frentes_membros(
         logger=logger,
     )
 
-    # Gerando artefato para validação dos dados
+    await acreate_table_artifact(
+        key="frentes-membros",
+        table=generate_artifact(jsons),
+        description="Total de membros encontrados nas frentes.",
+    )
+
+    dest = Path(out_dir) / "frentes_membros.ndjson"
+    return save_ndjson(cast(list[dict], jsons), dest)
+
+
+def generate_artifact(jsons: Any):
     artifact_data = []
     for i, json in enumerate(jsons):
         json = cast(dict, json)
@@ -50,12 +60,4 @@ async def extract_frentes_membros(
         artifact_data.append(
             {"index": i, "id_frente": id_frente, "numero_membros": len(membros)}
         )
-
-    await acreate_table_artifact(
-        key="frentes-membros",
-        table=artifact_data,
-        description="Total de membros encontrados nas frentes.",
-    )
-
-    dest = Path(out_dir) / "frentes_membros.ndjson"
-    return save_ndjson(cast(list[dict], jsons), dest)
+    return artifact_data

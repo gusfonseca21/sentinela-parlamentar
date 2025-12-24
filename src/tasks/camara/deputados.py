@@ -30,7 +30,22 @@ def extract_deputados(legislatura: dict, out_dir: str = "data/camara") -> list[i
     json = fetch_json(url)
     json = cast(dict, json)
 
-    # Gerando artefato para validação dos dados
+    create_table_artifact(
+        key="deputados",
+        table=generate_artifact(json),
+        description="Deputados em uma Legislatura",
+    )
+
+    _dest_path = save_json(json, dest)
+
+    ids_deputados = set()  # Retirar os ids duplicados. O JSON possui vários registros para os mesmos deputados
+    ids_deputados_raw = [deputado.get("id") for deputado in json.get("dados", [])]
+    ids_deputados.update(ids_deputados_raw)
+
+    return list(ids_deputados)
+
+
+def generate_artifact(json: dict):
     artifact_data = []
     for i, deputado in enumerate(json.get("dados", [])):
         artifact_data.append(
@@ -42,15 +57,4 @@ def extract_deputados(legislatura: dict, out_dir: str = "data/camara") -> list[i
                 "uf": deputado.get("siglaUf"),
             }
         )
-
-    create_table_artifact(
-        key="deputados", table=artifact_data, description="Deputados em uma Legislatura"
-    )
-
-    _dest_path = save_json(json, dest)
-
-    ids_deputados = set()  # Retirar os ids duplicados. O JSON possui vários registros para os mesmos deputados
-    ids_deputados_raw = [deputado.get("id") for deputado in json.get("dados", [])]
-    ids_deputados.update(ids_deputados_raw)
-
-    return list(ids_deputados)
+    return artifact_data

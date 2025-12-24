@@ -44,22 +44,37 @@ async def pipeline(
     deputados_f = camara.extract_deputados.submit(legislatura)
     id_legislatura = legislatura["dados"][0]["id"]
 
-    resolve_futures_to_results([deputados_f])
-    assiduidade_fs = camara.extract_assiduidade_deputados.submit(
-        cast(list[int], deputados_f), start_date, end_date
+    # resolve_futures_to_results([deputados_f])
+    # assiduidade_fs = camara.extract_assiduidade_deputados.submit(
+    #     cast(list[int], deputados_f), start_date, end_date
+    # )
+
+    # frentes_f = camara.extract_frentes.submit(id_legislatura)
+    # frentes_membros_f = camara.extract_frentes_membros.submit(cast(Any, frentes_f))
+
+    # resolve_futures_to_results(frentes_membros_f)
+    # detalhes_deputados_fs = camara.extract_detalhes_deputados.submit(
+    #     cast(list[int], deputados_f)
+    # )
+
+    # resolve_futures_to_results(detalhes_deputados_fs)
+    # discursos_deputados_fs = camara.extract_discursos_deputados.submit(
+    #     cast(list[int], deputados_f), start_date, end_date
+    # )
+
+    # resolve_futures_to_results(discursos_deputados_fs)
+    proposicoes_camara_fs = camara.extract_proposicoes_camara.submit(
+        start_date, end_date
     )
 
-    frentes_f = camara.extract_frentes.submit(id_legislatura)
-    frentes_membros_f = camara.extract_frentes_membros.submit(cast(Any, frentes_f))
-
-    resolve_futures_to_results([frentes_membros_f])
-    detalhes_deputados_fs = camara.extract_detalhes_deputados.submit(
-        cast(list[int], deputados_f)
+    resolve_futures_to_results([proposicoes_camara_fs])
+    detalhes_proposicoes_camara_fs = camara.extract_detalhes_proposicoes_camara.submit(
+        cast(list[int], proposicoes_camara_fs)
     )
 
-    resolve_futures_to_results([detalhes_deputados_fs])
-    discursos_deputados_fs = camara.extract_discursos_deputados.submit(
-        cast(list[int], deputados_f), start_date
+    resolve_futures_to_results(detalhes_proposicoes_camara_fs)
+    autores_proposicoes_camara_fs = camara.extract_autores_proposicoes_camara.submit(
+        cast(list[int], proposicoes_camara_fs)
     )
 
     # # BUGADO ""Parâmetro(s) inválido(s).""
@@ -72,11 +87,14 @@ async def pipeline(
         {
             # "tse": tse_fs,
             "congresso_deputados": deputados_f,
-            "congresso_assiduidade": assiduidade_fs,
-            "congresso_frentes": frentes_f,
-            "congresso_frentes_membros": frentes_membros_f,
-            "congresso_detalhes_deputados": detalhes_deputados_fs,
-            "congresso_discurso_deputados": discursos_deputados_fs,
+            # "congresso_assiduidade": assiduidade_fs,
+            # "congresso_frentes": frentes_f,
+            # "congresso_frentes_membros": frentes_membros_f,
+            # "congresso_detalhes_deputados": detalhes_deputados_fs,
+            # "congresso_discurso_deputados": discursos_deputados_fs,
+            "congresso_proposicoes": proposicoes_camara_fs,
+            "congresso_detalhes_proposicoes": detalhes_proposicoes_camara_fs,
+            "autores_proposicoes_camara_fs": autores_proposicoes_camara_fs,
             # "congresso_despesas_deputados": despesas_deputados_fs,
         }
     )

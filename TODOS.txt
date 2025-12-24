@@ -1,3 +1,12 @@
 - Implementar fetch de proposições Câmara.
     - Pegar pela URL https://dadosabertos.camara.leg.br/api/v2/proposicoes?dataInicio=2025-12-02&dataFim=2025-12-02&ordem=ASC&ordenarPor=id&pagina=2&itens=100
     - Já irá trazer as proposições que foram votadas e que tiveram alteração no status, não é necessário fazer outras etapas para complementar as proposições baixadas
+
+- Pensar no tratamento de erros. O erro de poucos endpoints pode parar a aplicação toda?
+
+- Pensar em forma modular de habilidar/desabilitar dados a baixar
+
+- Nas funções de extract há o valor padrão para o out_dir. Torná-lo configurável.
+
+- Criar parâmetro de verificação na função de download e selecionar entre resultados
+paginados e não paginados.
