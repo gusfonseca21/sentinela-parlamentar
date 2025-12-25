@@ -28,7 +28,9 @@ def extract_legislatura(
 
     logger.info(f"CÂMARA: Baixando Legislatura atual de {LEGISLATURA_URL} -> {out_dir}")
 
-    json = fetch_json(LEGISLATURA_URL)
+    json = fetch_json(
+        url=LEGISLATURA_URL, max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES
+    )
     json = cast(dict, json)
 
     save_json(json, dest)

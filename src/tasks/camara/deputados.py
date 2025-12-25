@@ -29,7 +29,7 @@ def extract_deputados(
     url = deputados_url(legislatura)
     dest = Path(out_dir) / "deputados.json"
     logger.info(f"Câmara: buscando Deputados de {url} -> {dest}")
-    json = fetch_json(url)
+    json = fetch_json(url=url, max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES)
     json = cast(dict, json)
 
     create_table_artifact(

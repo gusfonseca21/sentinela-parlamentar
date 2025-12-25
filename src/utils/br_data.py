@@ -1,12 +1,13 @@
 from datetime import datetime
 
-BR_STATES = [
+BR_UFS = [
     "AC",
     "AL",
     "AP",
     "AM",
     "BA",
     "CE",
+    "DF",
     "ES",
     "GO",
     "MA",

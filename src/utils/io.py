@@ -3,10 +3,10 @@ import hashlib
 import json
 import os
 import shutil
+import time
 import zipfile
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 import httpx
 
@@ -26,31 +26,41 @@ def download_stream(
     dest_path: str | Path,
     unzip: bool = False,
     timeout: float = 60.0,
-    progress_artifact_id: UUID | None = None,
-) -> str:
+    max_retries: int = 10,
+) -> str | None:
     """
     Faça o download de um arquivo em stream e opcionalmente extrai os arquivos, caso seja um ZIP.
     Retorna o caminho do arquivo.
     """
     dest_path = Path(dest_path)
     ensure_dir(dest_path.parent)
-    with httpx.stream("GET", url, timeout=timeout) as r:
-        r.raise_for_status()
 
-        _total_size = int(r.headers.get("content-length", 0))
-        downloaded_size = 0
+    for attempt in range(max_retries):
+        try:
+            with httpx.stream("GET", url, timeout=timeout) as r:
+                r.raise_for_status()
 
-        with open(dest_path, "wb") as f:
-            for chunk in r.iter_bytes():
-                f.write(chunk)
-                downloaded_size += len(chunk)
+                _total_size = int(r.headers.get("content-length", 0))
+                downloaded_size = 0
 
-        if unzip:
-            _extracted_files = unzip_file(dest_path)
-            dest_path.unlink()  # Apaga os zips após a extração
-            return str(dest_path)
-        else:
-            return str(dest_path)
+                with open(dest_path, "wb") as f:
+                    for chunk in r.iter_bytes():
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+
+                if unzip:
+                    _extracted_files = unzip_file(dest_path)
+                    dest_path.unlink()  # Apaga os zips após a extração
+                    return str(dest_path)
+                else:
+                    return str(dest_path)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(2**attempt)
+            else:
+                raise Exception(
+                    f"Falha ao baixar o recurso {url} após {max_retries} tentativas: {e}"
+                )
 
 
 def unzip_file(zip_path: str | Path) -> list[str]:
@@ -65,17 +75,28 @@ def unzip_file(zip_path: str | Path) -> list[str]:
 
 
 # Busca um json
-def fetch_json(url: str, timeout: float = 30.0) -> dict | list:
+def fetch_json(
+    url: str, timeout: float = 30.0, max_retries: int = 10
+) -> dict | list | None:
     """
     Busca um JSON a partir da URL e retorna o objeto em memória
     """
     with httpx.Client(timeout=timeout) as client:
-        r = client.get(url)
-        r.raise_for_status()
-        return r.json()
+        for attempt in range(max_retries):
+            try:
+                r = client.get(url)
+                r.raise_for_status()
+                return r.json()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(2**attempt)
+                else:
+                    raise Exception(
+                        f"Erro ao baixar recurso da url {url} após {max_retries} tentativas: {e}"
+                    )
 
 
-def save_json(data: Any, dest_path: str | Path, timeout: float = 60.0) -> str:
+def save_json(data: Any, dest_path: str | Path) -> str:
     """
     Salva um JSON em disco
     """

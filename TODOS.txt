@@ -1,3 +1,5 @@
 - Pensar no tratamento de erros. O erro de poucos endpoints pode parar a aplicação toda?
 
 - Pensar em forma modular de habilidar/desabilitar dados a baixar
+
+- Pensar em estratégia para lidar com poucos erros de download de listas de urls
