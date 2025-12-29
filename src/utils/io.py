@@ -76,11 +76,24 @@ def unzip_file(zip_path: str | Path) -> list[str]:
 
 # Busca um json
 def fetch_json(
-    url: str, timeout: float = 30.0, max_retries: int = 10
+    url: str,
+    timeout: float = 30.0,
+    max_retries: int = 10,
+    logger: Any | None = None,
 ) -> dict | list | None:
     """
     Busca um JSON a partir da URL e retorna o objeto em memória
     """
+    logger = logger or get_prefect_logger_or_none()
+
+    def log(msg: str):
+        if logger:
+            logger.warning(msg)
+        else:
+            print(msg)
+
+    log(f"Baixando URL: {url}")
+
     with httpx.Client(timeout=timeout) as client:
         for attempt in range(max_retries):
             try:
@@ -89,11 +102,14 @@ def fetch_json(
                 return r.json()
             except Exception as e:
                 if attempt < max_retries - 1:
+                    log(
+                        f"Um erro ocorreu no fetch de dados: {e}. TENTANDO NOVAMENTE. Tentativa: {attempt}"
+                    )
                     time.sleep(2**attempt)
                 else:
-                    raise Exception(
-                        f"Erro ao baixar recurso da url {url} após {max_retries} tentativas: {e}"
-                    )
+                    message = f"Erro ao baixar recurso da url {url} após {max_retries} tentativas: {e}"
+                    log(message)
+                    raise Exception(message)
 
 
 def save_json(data: Any, dest_path: str | Path) -> str:

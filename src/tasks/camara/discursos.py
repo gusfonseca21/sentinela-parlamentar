@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, cast
 
@@ -16,8 +16,10 @@ APP_SETTINGS = load_config()
 def urls_discursos(
     deputados_ids: list[int], start_date: date, end_date: date
 ) -> list[str]:
+    # Discursos podem demorar a ser inseridos na base de dados
+    one_month_back = start_date - timedelta(days=30)
     return [
-        f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/discursos?dataInicio={start_date}&dataFim={end_date}&itens=100"
+        f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/discursos?dataInicio={one_month_back}&dataFim={end_date}&itens=100"
         for id in deputados_ids
     ]
 

@@ -100,10 +100,9 @@ async def fetch_many_camara(
                             await asyncio.sleep(2**attempt)
                         else:
                             queue.task_done()
-                            log(
-                                f"Falha permanente ao baixar {url} após {max_retries} tentativas: {e}"
-                            )
-                            raise
+                            message = f"Falha permanente ao baixar {url} após {max_retries} tentativas: {e}"
+                            log(message)
+                            raise Exception(message)
 
     queue = asyncio.Queue()
 
