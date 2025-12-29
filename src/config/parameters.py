@@ -1,0 +1,12 @@
+class TasksNames:
+    EXTRACT_CAMARA_LEGISLATURA = "extract_camara_legislatura"
+    EXTRACT_CAMARA_DEPUTADOS = "extract_camara_deputados"
+    EXTRACT_CAMARA_ASSIDUIDADE = "extract_camara_assiduidade"
+    EXTRACT_CAMARA_FRENTES = "extract_camara_frentes"
+    EXTRACT_CAMARA_FRENTES_MEMBROS = "extract_camara_frentes_membros"
+    EXTRACT_CAMARA_DETALHES_DEPUTADOS = "extract_camara_detalhes_deputados"
+    EXTRACT_CAMARA_DISCURSOS_DEPUTADOS = "extract_camara_discursos_deputados"
+    EXTRACT_CAMARA_PROPOSICOES = "extract_camara_proposicoes"
+    EXTRACT_CAMARA_DETALHES_PROPOSICOES = "extract_camara_detalhes_proposicoes"
+    EXTRACT_CAMARA_AUTORES_PROPOSICOES = "extract_camara_autores_proposicoes"
+    EXTRACT_CAMARA_DESPESAS_DEPUTADOS = "extract_camara_despesas_deputados"

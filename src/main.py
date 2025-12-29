@@ -5,3 +5,5 @@ if __name__ == "__main__":
     pipeline.serve(  # type: ignore
         name="deploy-1"
     )
+
+# uv run prefect deployment run 'pipeline/deploy-1' -p ignore_tasks='["extract_camara_despesas_deputados"]'

@@ -20,7 +20,7 @@ def urls_despesas(
     # Se start_date for menor que o ano atual, irá baixar todos os dados de despesas
     if start_date.year < today.year:
         return [
-            f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?idLegislatura={id_legislatura}&itens=1000"
+            f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?idLegislatura={id_legislatura}&itens=80"
             for id in deputados_ids
         ]
 
@@ -32,7 +32,7 @@ def urls_despesas(
         for id in deputados_ids:
             for month in range(three_months_back.month, curr_month + 1):
                 three_months_urls.add(
-                    f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?ano={today.year}&mes={month}&itens=1000&ordem=ASC"
+                    f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?ano={today.year}&mes={month}&itens=80&ordem=ASC"
                 )
 
         return list(three_months_urls)
