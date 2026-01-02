@@ -11,4 +11,5 @@ wheels/
 .venv
 
 # Outpud downloads
-data
+output/
+data/
