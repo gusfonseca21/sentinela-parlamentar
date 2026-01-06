@@ -29,12 +29,14 @@ def extract_redes_sociais(
 
     url = f"{APP_SETTINGS.TSE.BASE_URL}consulta_cand/rede_social_candidato_{year}_{uf}.zip"
 
-    dest = Path(out_dir) / "redes_sociais" / str(year) / f"{uf}-{year}.zip"
+    dir_dest_path = Path(out_dir) / "redes_sociais" / str(year)
+
+    file_dest_path = dir_dest_path / f"{uf}-{year}.zip"
 
     logger.info(
         f"Fazendo download das tabelas de redes sociais dos candidatos do estado {uf} da eleição de {year}: {url}"
     )
 
-    download_stream(url, dest, unzip=True)
+    _tmp_zip_dest_path = download_stream(url, file_dest_path, unzip=True)
 
-    return str(Path(out_dir) / "redes_sociais")
+    return str(dir_dest_path)

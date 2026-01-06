@@ -4,7 +4,6 @@ from pathlib import Path
 from prefect import get_run_logger, task
 
 from config.loader import CACHE_POLICY_MAP, load_config
-from utils.file import keep_only_files
 from utils.io import download_stream
 
 APP_SETTINGS = load_config()
@@ -29,14 +28,14 @@ def extract_prestacao_contas(
 
     url = f"{APP_SETTINGS.TSE.BASE_URL}prestacao_contas/prestacao_de_contas_eleitorais_candidatos_{year}.zip"
 
-    dest = Path(out_dir) / "prestacao_contas" / str(year) / f"{year}.zip"
+    dir_dest_path = Path(out_dir) / "prestacao_contas" / str(year)
+
+    file_dest_path = dir_dest_path / f"{year}.zip"
 
     logger.info(
         f"Fazendo download das tabelas de prestação de contas dos candidatos da eleição de {year}: {url}"
     )
 
-    dest_path = download_stream(url, dest, unzip=True)
+    _tmp_zip_dest_path = download_stream(url, file_dest_path, unzip=True)
 
-    keep_only_files(path=APP_SETTINGS.TSE.OUTPUT_EXTRACT_DIR, file_ext="csv")
-
-    return dest_path
+    return str(dir_dest_path)

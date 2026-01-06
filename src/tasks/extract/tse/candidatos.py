@@ -4,7 +4,6 @@ from pathlib import Path
 from prefect import get_run_logger, task
 
 from config.loader import CACHE_POLICY_MAP, load_config
-from utils.file import keep_only_files
 from utils.io import download_stream
 
 APP_SETTINGS = load_config()
@@ -29,14 +28,16 @@ def extract_candidatos(
 
     url = f"{APP_SETTINGS.TSE.BASE_URL}consulta_cand/consulta_cand_{year}.zip"
 
-    dest = Path(out_dir) / "candidatos" / str(year) / f"{year}.zip"
+    dir_dest_path = Path(out_dir) / "candidatos" / str(year)
+
+    file_dest_path = dir_dest_path / f"{year}.zip"
 
     logger.info(
         f"Fazendo download da lista de candidatos do TSE da eleição de {year}: {url}"
     )
 
-    dest_path = download_stream(url, dest, unzip=True)
+    _tmp_zip_dest_path = download_stream(url, file_dest_path, unzip=True)
 
-    keep_only_files(path=APP_SETTINGS.TSE.OUTPUT_EXTRACT_DIR, file_ext="csv")
+    logger.info(dir_dest_path)
 
-    return dest_path
+    return str(dir_dest_path)
