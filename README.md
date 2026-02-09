@@ -1,4 +1,4 @@
-# Magnetron
+# Sentinela Parlamentar
 
 Pipeline para a coleta e armazenamento de dados relacionados à atividade parlamentar do Congresso Nacional.
 
@@ -11,8 +11,8 @@ Pipeline para a coleta e armazenamento de dados relacionados à atividade parlam
 Clone o repositório e instale as dependências do projeto:
 
 ```bash
-git clone https://github.com/gusfonseca21/magnetron
-cd magnetron
+git clone https://github.com/gusfonseca21/sentinela-parlamentar
+cd sentinela-parlamentar/pipeline
 uv sync
 ```
 
@@ -40,7 +40,7 @@ uv run src/main.py
 
 1. Acesse a interface web do Prefect em `http://127.0.0.1:4200`
 2. No menu lateral esquerdo, selecione **Deployments**
-3. Clique no deployment **magnetron-etl**
+3. Clique no deployment **sentinela-pipeline**
 4. (Opcional) Para configurar quais flows executar:
    - Clique no botão com três pontos verticais (⋮) no canto superior direito
    - Selecione **Edit**

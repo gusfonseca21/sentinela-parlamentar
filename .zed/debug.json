@@ -8,6 +8,6 @@
 		"adapter": "Debugpy",
 		"program": "$ZED_FILE",
 		"request": "launch",
-		"python": "$ZED_WORKTREE_ROOT/.venv/bin/python",
+		"python": "$ZED_WORKTREE_ROOT/pipeline/.venv/bin/python",
 	},
 ]

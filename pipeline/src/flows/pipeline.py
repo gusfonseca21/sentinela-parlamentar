@@ -23,7 +23,7 @@ def pipeline(
     - timedelta(days=APP_SETTINGS.FLOW.DATE_LOOKBACK),
     end_date: date = datetime.now().date(),
     refresh_cache: bool = False,
-    ignore_tasks: list[str] = ["extract_camara_despesas_deputados"],
+    ignore_tasks: list[str] = [],
     ignore_flows: list[str] = [],
 ):
     logger = get_run_logger()
