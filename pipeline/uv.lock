@@ -1655,10 +1655,11 @@ wheels = [
 ]
 
 [[package]]
-name = "sentinela-parlamentar"
+name = "prisma-do-congresso"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "alembic" },
     { name = "pandas" },
     { name = "prefect" },
     { name = "pytest" },
@@ -1668,6 +1669,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "alembic", specifier = ">=1.17.0" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "prefect", specifier = ">=3.6.9" },
     { name = "pytest", specifier = ">=9.0.1" },

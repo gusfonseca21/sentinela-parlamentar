@@ -20,19 +20,21 @@ def urls_despesas(
     # Se start_date for menor que o ano atual, irá baixar todos os dados de despesas
     if start_date.year < today.year:
         return [
-            f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?idLegislatura={id_legislatura}"
+            f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?idLegislatura={id_legislatura}&itens=100"
             for id in deputados_ids
         ]
 
     else:
+        print("CAIU NO ELSE")
         # O Deputado tem 3 meses para apresentar a nota
         curr_month = today.month
         three_months_back = today - timedelta(days=90)
         three_months_urls = set()
         for id in deputados_ids:
             for month in range(three_months_back.month, curr_month + 1):
+                print(f"Mês: {month}")
                 three_months_urls.add(
-                    f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?ano={today.year}&mes={month}&ordem=ASC"
+                    f"{APP_SETTINGS.CAMARA.REST_BASE_URL}deputados/{id}/despesas?ano={today.year}&mes={month}&ordem=ASC&itens=100"
                 )
 
         return list(three_months_urls)

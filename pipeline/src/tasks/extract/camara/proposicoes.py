@@ -47,6 +47,7 @@ async def extract_proposicoes_camara(
         description="Proposições da Câmara",
     )
 
+    # OBS: ao atualizar os dados no final do dia, é possível que no meio do caminho novos dados sejam inseridos na API, o que tornará a comparação errônea pois terão mais dados sendo baixados que os contabilizados inicialmente.
     ids_proposicoes = {int(p.get("id")) for j in jsons for p in j.get("dados", [])}  # type: ignore
 
     return list(ids_proposicoes)
