@@ -5,6 +5,7 @@ Pipeline para a coleta e armazenamento de dados relacionados à atividade parlam
 ## Pré-requisitos
 
 - **[UV](https://docs.astral.sh/uv/)** - Gerenciador de pacotes moderno para Python
+- **[PostgreSQL](https://www.postgresql.org/)** - Sistema de Gerenciamento de Banco de Dados
 
 ## Instalação
 
@@ -17,10 +18,21 @@ uv sync
 ```
 
 ## Configuração e Execução
+OBS: **Todos os comandos aqui listados devem ser executados dentro do diretório raiz do projeto pipeline**: `prisma-parlamentar/pipeline/`
+
+### 1. Configurar Arquivo de Variáveis de Ambiente
+No diretório raiz crie um arquivo .env que deve possuir as seguintes variáveis:
+- **DATABASE_URL**
+
+### 2. Sincronizar os Esquemas do Banco de Dados
+No .env adicione a URL de conexão com o banco de dados que deseja ser utilizado e em seguida execute o seguinte comando:
+```bash
+uv run alembic upgrade head
+```
 
 ### 1. Iniciar o Servidor Prefect
 
-Abra um terminal no diretório raiz do projeto e execute:
+Execute o seguinte comando em um novo terminal:
 
 ```bash
 uv run prefect server start
