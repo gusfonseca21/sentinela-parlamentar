@@ -1,10 +1,11 @@
 from datetime import date, datetime, timedelta
 
 from prefect import flow, get_run_logger
-from prefect.futures import resolve_futures_to_results
+from prefect.futures import resolve_futures_to_states
 
 from config.loader import load_config
 from config.parameters import FlowsNames
+from database.models.base import PipelineParams
 from database.repository.lote import end_lote_in_db, start_lote_in_db
 
 from .camara import run_camara_flow
@@ -26,26 +27,37 @@ def pipeline(
     end_date: date = datetime.now().date(),
     refresh_cache: bool = False,
     ignore_tasks: list[str] = [],
-    ignore_flows: list[str] = [],
+    ignore_flows: list[str] = ["tse", "camara"],
 ):
     logger = get_run_logger()
     logger.info("Iniciando Pipeline ETL.")
 
-    lote_id = start_lote_in_db()
+    lote_id = start_lote_in_db(
+        start_date_extract=start_date,
+        end_date_extract=end_date,
+        params=PipelineParams(
+            refresh_cache=refresh_cache,
+            ignore_tasks=ignore_tasks,
+            ignore_flows=ignore_flows,
+        ),
+    )
     logger.info(f"Lote {lote_id} iniciou.")
 
-    tse_flow = None
+    futures = []
+
     if FlowsNames.TSE not in ignore_flows:
-        tse_flow = run_tse_flow.submit(start_date, refresh_cache, ignore_tasks)
+        futures.append(run_tse_flow.submit(start_date, refresh_cache, ignore_tasks))
 
-    camara_flow = None
     if FlowsNames.CAMARA not in ignore_flows:
-        camara_flow = run_camara_flow.submit(start_date, end_date, ignore_tasks)
+        futures.append(run_camara_flow.submit(start_date, end_date, ignore_tasks))
 
-    senado_flow = None
     if FlowsNames.SENADO not in ignore_flows:
-        senado_flow = run_senado_flow.submit(start_date, end_date, ignore_tasks)
+        futures.append(run_senado_flow.submit(start_date, end_date, ignore_tasks))
 
-    resolve_futures_to_results([tse_flow, camara_flow, senado_flow])
-    lote_id_end = end_lote_in_db(lote_id)
+    ## Bloquea a execução do código até que todos os flows sejam finalizados
+    states = resolve_futures_to_states(futures)
+
+    all_flows_ok = all(s.is_completed() for s in states)  # type:ignore
+
+    lote_id_end = end_lote_in_db(lote_id, all_flows_ok)
     logger.info(f"Lote {lote_id_end} finalizou com sucesso")
