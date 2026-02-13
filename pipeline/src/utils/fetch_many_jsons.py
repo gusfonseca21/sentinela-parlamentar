@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from prefect.logging import get_logger
 
 from config.request_headers import headers
 from database.repository.erros_extract import insert_extract_error_db
@@ -10,6 +11,8 @@ from database.repository.erros_extract import insert_extract_error_db
 from .io import ensure_dir
 from .log import get_prefect_logger_or_none
 from .url_utils import alter_query_param_value, get_query_param_value, is_first_page
+
+logger1 = get_logger()
 
 
 # Armazena em memória ou grava em disco uma lista de JSONs
@@ -37,6 +40,7 @@ async def fetch_many_jsons(
         else:
             print(msg)
 
+    db_errors = []
     out_dir = ensure_dir(out_dir) if out_dir else None
 
     async def worker(
@@ -127,13 +131,19 @@ async def fetch_many_jsons(
                             message = f"Falha permanente ao baixar {url} após {max_retries} tentativas: {e}"
                             log(message)
 
-                            insert_extract_error_db(
-                                lote_id=lote_id,
-                                task=task,
-                                status_code=status_code,
-                                message=request_message,
-                                url=url,
-                            )
+                            try:
+                                insert_extract_error_db(
+                                    lote_id=lote_id,
+                                    task=task,
+                                    status_code=status_code,
+                                    message=request_message,
+                                    url=url,
+                                )
+                            except Exception as e:
+                                logger1.critical(
+                                    f"Erro ao tentar inserir o erro da URL {url} no banco de dados"
+                                )
+                                db_errors.append(url)
 
                             ## Não deve levantar o erro. Lidaremos com as URLs problemáticas separadamente
                             # raise Exception(message)
@@ -180,6 +190,11 @@ async def fetch_many_jsons(
             stats=stats,
             log=log,
             paginated=follow_pagination,
+        )
+
+    if db_errors:
+        raise Exception(
+            f"Houve erro na inserção de {len(db_errors)} erros de URLs no banco de dados"
         )
 
     return results
