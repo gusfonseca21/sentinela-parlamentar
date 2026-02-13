@@ -19,6 +19,7 @@ APP_SETTINGS = load_config()
 )
 def extract_legislatura(
     start_date: date,
+    lote_id: int,
     out_dir: str = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> dict:
     logger = get_run_logger()

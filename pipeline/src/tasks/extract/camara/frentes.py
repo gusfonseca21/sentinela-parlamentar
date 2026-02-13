@@ -16,13 +16,15 @@ def frentes_url(id_legislatura: int) -> str:
 
 
 @task(
-    task_run_name="extract_frentes",
+    task_run_name="extract_frentes_camara",
     retries=APP_SETTINGS.CAMARA.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TASK_TIMEOUT,
 )
-async def extract_frentes(
-    legislatura: dict, out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR
+async def extract_frentes_camara(
+    legislatura: dict,
+    lote_id: int,
+    out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> list[str]:
     logger = get_run_logger()
 
@@ -39,6 +41,7 @@ async def extract_frentes(
         follow_pagination=True,
         logger=logger,
         validate_results=True,
+        task="extract_frentes_camara",
     )
     jsons = cast(list[dict], jsons)
 

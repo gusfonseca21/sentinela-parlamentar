@@ -21,6 +21,7 @@ APP_SETTINGS = load_config()
 async def extract_proposicoes_camara(
     start_date: date,
     end_date: date,
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> list[int]:
     logger = get_run_logger()
@@ -36,6 +37,7 @@ async def extract_proposicoes_camara(
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         logger=logger,
         validate_results=True,
+        task="extract_proposicoes_camara",
     )
 
     dest = Path(out_dir) / "proposicoes.ndjson"

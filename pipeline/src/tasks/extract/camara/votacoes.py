@@ -45,6 +45,7 @@ def generate_urls(start_date: date, end_date: date) -> list[str]:
 async def extract_votacoes_camara(
     start_date: date,
     end_date: date,
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> list[str]:
     logger = get_run_logger()
@@ -60,6 +61,7 @@ async def extract_votacoes_camara(
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         logger=logger,
         validate_results=True,
+        task="extract_votacoes_camara",
     )
 
     dest = Path(out_dir) / "votacoes.ndjson"

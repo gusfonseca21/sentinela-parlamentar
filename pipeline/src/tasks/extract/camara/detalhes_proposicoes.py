@@ -25,6 +25,7 @@ def detalhes_proposicoes_urls(proposicoes_ids: list[int]) -> list[str]:
 )
 async def extract_detalhes_proposicoes_camara(
     proposicoes_ids: list[int],
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> str:
     logger = get_run_logger()
@@ -40,6 +41,7 @@ async def extract_detalhes_proposicoes_camara(
         logger=logger,
         follow_pagination=False,
         validate_results=True,
+        task="extract_detalhes_proposicoes_camara",
     )
 
     await acreate_table_artifact(

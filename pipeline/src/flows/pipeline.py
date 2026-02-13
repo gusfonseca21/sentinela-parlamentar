@@ -46,13 +46,19 @@ def pipeline(
     futures = []
 
     if FlowsNames.TSE not in ignore_flows:
-        futures.append(run_tse_flow.submit(start_date, refresh_cache, ignore_tasks))
+        futures.append(
+            run_tse_flow.submit(start_date, refresh_cache, ignore_tasks, lote_id)
+        )
 
     if FlowsNames.CAMARA not in ignore_flows:
-        futures.append(run_camara_flow.submit(start_date, end_date, ignore_tasks))
+        futures.append(
+            run_camara_flow.submit(start_date, end_date, ignore_tasks, lote_id)
+        )
 
     if FlowsNames.SENADO not in ignore_flows:
-        futures.append(run_senado_flow.submit(start_date, end_date, ignore_tasks))
+        futures.append(
+            run_senado_flow.submit(start_date, end_date, ignore_tasks, lote_id)
+        )
 
     ## Bloquea a execução do código até que todos os flows sejam finalizados
     states = resolve_futures_to_states(futures)

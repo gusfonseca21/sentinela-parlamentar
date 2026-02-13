@@ -19,7 +19,9 @@ from utils.br_data import BR_UFS, get_election_years
     description="Orquestramento de tasks do endpoint TSE.",
     log_prints=True,
 )
-def tse_flow(start_date: date, refresh_cache: bool, ignore_tasks: list[str]):
+def tse_flow(
+    start_date: date, refresh_cache: bool, ignore_tasks: list[str], lote_id: int
+):
     logger = get_run_logger()
     logger.info("Iniciando execução da Flow do TSE")
 
@@ -29,7 +31,9 @@ def tse_flow(start_date: date, refresh_cache: bool, ignore_tasks: list[str]):
     extract_candidatos_f = None
     if TasksNames.EXTRACT_TSE_CANDIDATOS not in ignore_tasks:
         extract_candidatos_f = [
-            extract_candidatos.with_options(refresh_cache=refresh_cache).submit(year)
+            extract_candidatos.with_options(refresh_cache=refresh_cache).submit(
+                year=year, lote_id=lote_id
+            )
             for year in elections_years
         ]  # Retorna lista de futures, que quando resolvidos retorna lista de strings
 
@@ -38,7 +42,7 @@ def tse_flow(start_date: date, refresh_cache: bool, ignore_tasks: list[str]):
     if TasksNames.EXTRACT_TSE_PRESTACAO_CONTAS not in ignore_tasks:
         extract_prestacao_contas_f = [
             extract_prestacao_contas.with_options(refresh_cache=refresh_cache).submit(
-                year
+                year=year, lote_id=lote_id
             )
             for year in elections_years
         ]
@@ -48,7 +52,7 @@ def tse_flow(start_date: date, refresh_cache: bool, ignore_tasks: list[str]):
     if TasksNames.EXTRACT_TSE_REDES_SOCIAIS not in ignore_tasks:
         extract_redes_sociais_f = [
             extract_redes_sociais.with_options(refresh_cache=refresh_cache).submit(
-                year, uf
+                year=year, uf=uf, lote_id=lote_id
             )
             for year in elections_years
             for uf in BR_UFS
@@ -59,7 +63,9 @@ def tse_flow(start_date: date, refresh_cache: bool, ignore_tasks: list[str]):
     extract_votacao_f = None
     if TasksNames.EXTRACT_TSE_VOTACAO not in ignore_tasks:
         extract_votacao_f = [
-            extract_votacao.with_options(refresh_cache=refresh_cache).submit(year)
+            extract_votacao.with_options(refresh_cache=refresh_cache).submit(
+                year, lote_id
+            )
             for year in elections_years
         ]
 
@@ -81,5 +87,7 @@ def tse_flow(start_date: date, refresh_cache: bool, ignore_tasks: list[str]):
     task_run_name="run_tse_flow",
     description="Task que permite executar o Flow do TSE de forma concorrente em relação às outras flows.",
 )
-def run_tse_flow(start_date: date, refresh_cache: bool, ignore_tasks: list[str]):
-    tse_flow(start_date, refresh_cache, ignore_tasks)
+def run_tse_flow(
+    start_date: date, refresh_cache: bool, ignore_tasks: list[str], lote_id: int
+):
+    tse_flow(start_date, refresh_cache, ignore_tasks, lote_id)

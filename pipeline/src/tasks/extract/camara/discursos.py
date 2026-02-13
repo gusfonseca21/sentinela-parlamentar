@@ -25,15 +25,16 @@ def urls_discursos(
 
 
 @task(
-    task_run_name="extract_discursos_deputados",
+    task_run_name="extract_discursos_deputados_camara",
     retries=APP_SETTINGS.CAMARA.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TASK_TIMEOUT,
 )
-async def extract_discursos_deputados(
+async def extract_discursos_deputados_camara(
     deputados_ids: list[int],
     start_date: date,
     end_date: date,
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> str:
     logger = get_run_logger()
@@ -48,6 +49,7 @@ async def extract_discursos_deputados(
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         logger=logger,
         validate_results=True,
+        task="extract_discursos_deputados_camara",
     )
 
     await acreate_table_artifact(

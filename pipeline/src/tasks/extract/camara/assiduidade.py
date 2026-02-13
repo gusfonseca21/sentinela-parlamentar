@@ -26,15 +26,16 @@ def assiduidade_urls(
 
 
 @task(
-    task_run_name="extract_assiduidade_deputados",
+    task_run_name="extract_assiduidade_camara",
     retries=APP_SETTINGS.CAMARA.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TASK_TIMEOUT,
 )
-async def extract_assiduidade_deputados(
+async def extract_assiduidade_camara(
     deputados_ids: list[int],
     start_date: date,
     end_date: date,
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> str:
     """

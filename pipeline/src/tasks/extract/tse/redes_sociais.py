@@ -23,6 +23,7 @@ APP_SETTINGS = load_config()
 def extract_redes_sociais(
     year: int,
     uf: str,
+    lote_id: int,
     out_dir: Path | str = APP_SETTINGS.TSE.OUTPUT_EXTRACT_DIR,
 ) -> str | None:
     logger = get_run_logger()

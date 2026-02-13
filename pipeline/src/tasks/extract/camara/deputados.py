@@ -18,13 +18,15 @@ def deputados_url(legislatura: dict) -> str:
 
 
 @task(
-    task_run_name="extract_deputados",
+    task_run_name="extract_deputados_camara",
     retries=APP_SETTINGS.CAMARA.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TASK_TIMEOUT,
 )
-def extract_deputados(
-    legislatura: dict, out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR
+def extract_deputados_camara(
+    legislatura: dict,
+    lote_id: int,
+    out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> list[int]:
     logger = get_run_logger()
     url = deputados_url(legislatura)

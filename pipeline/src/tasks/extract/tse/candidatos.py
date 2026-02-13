@@ -22,6 +22,7 @@ APP_SETTINGS = load_config()
 )
 def extract_candidatos(
     year: int,
+    lote_id: int,
     out_dir: Path | str = APP_SETTINGS.TSE.OUTPUT_EXTRACT_DIR,
 ) -> str | None:
     logger = get_run_logger()

@@ -32,14 +32,15 @@ def get_processos_url(start_date: date, end_date: date, logger: Any) -> list[str
 
 
 @task(
-    task_run_name="extract_processos",
+    task_run_name="extract_processos_senado",
     retries=APP_SETTINGS.SENADO.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.SENADO.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.SENADO.TASK_TIMEOUT,
 )
-async def extract_processos(
+async def extract_processos_senado(
     start_date: date,
     end_date: date,
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.SENADO.OUTPUT_EXTRACT_DIR,
 ):
     logger = get_run_logger()
@@ -55,6 +56,8 @@ async def extract_processos(
         follow_pagination=False,
         logger=logger,
         validate_results=False,
+        task="extract_processos_senado",
+        lote_id=lote_id,
     )
 
     await acreate_table_artifact(

@@ -5,6 +5,7 @@ from typing import Any
 import httpx
 
 from config.request_headers import headers
+from database.repository.erros_extract import insert_extract_error_db
 
 from .io import ensure_dir
 from .log import get_prefect_logger_or_none
@@ -14,6 +15,8 @@ from .url_utils import alter_query_param_value, get_query_param_value, is_first_
 # Armazena em memória ou grava em disco uma lista de JSONs
 async def fetch_many_jsons(
     urls: list[str],
+    task: str,
+    lote_id: int,
     out_dir: str | Path | None = None,
     limit: int = 10,
     timeout: float = 30.0,
@@ -43,6 +46,8 @@ async def fetch_many_jsons(
         semaphore: asyncio.Semaphore,
         client: httpx.AsyncClient,
         stats: dict,
+        task: str,
+        lote_id: int,
     ):
         while True:  # Mantém o consumidor da fila vivo para processar outras urls
             url = await queue.get()
@@ -56,11 +61,28 @@ async def fetch_many_jsons(
 
             async with semaphore:
                 print(f"Baixando URL: {url=}")
+
+                status_code = None
+                request_message = None
+
                 for attempt in range(max_retries):
                     try:
                         response = await client.get(url, timeout=timeout)
 
+                        status_code = response.status_code
+
+                        if status_code >= 400:
+                            try:
+                                error_response = response.json()
+                                if error_response.get("detail", None):
+                                    request_message = error_response.get("detail", None)
+                                else:
+                                    request_message = response.json()
+                            except Exception:
+                                request_message = response.text
+
                         response.raise_for_status()
+
                         data = response.json()
 
                         if is_first_page(url):
@@ -104,7 +126,17 @@ async def fetch_many_jsons(
                             queue.task_done()
                             message = f"Falha permanente ao baixar {url} após {max_retries} tentativas: {e}"
                             log(message)
-                            raise Exception(message)
+
+                            insert_extract_error_db(
+                                lote_id=lote_id,
+                                task=task,
+                                status_code=status_code,
+                                message=request_message,
+                                url=url,
+                            )
+
+                            ## Não deve levantar o erro. Lidaremos com as URLs problemáticas separadamente
+                            # raise Exception(message)
 
     queue = asyncio.Queue()
 
@@ -127,6 +159,8 @@ async def fetch_many_jsons(
                     semaphore,
                     client,
                     stats,
+                    task,
+                    lote_id,
                 )
             )
             for _ in range(

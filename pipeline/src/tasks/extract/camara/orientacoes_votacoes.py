@@ -26,6 +26,7 @@ def orientacoes_votacoes_urls(votacoes_ids: list[str]) -> list[str]:
 )
 async def extract_orientacoes_votacoes_camara(
     votacoes_ids: list[str],
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> str:
     logger = get_run_logger()
@@ -40,6 +41,7 @@ async def extract_orientacoes_votacoes_camara(
         logger=logger,
         follow_pagination=False,
         validate_results=True,
+        task="extract_orientacoes_votacoes_camara",
     )
 
     await acreate_table_artifact(

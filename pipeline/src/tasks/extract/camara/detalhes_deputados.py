@@ -18,13 +18,14 @@ def detalhes_deputados_urls(deputados_ids: list[int]) -> list[str]:
 
 
 @task(
-    task_run_name="extract_detalhes_deputados",
+    task_run_name="extract_detalhes_deputados_camara",
     retries=APP_SETTINGS.CAMARA.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TASK_TIMEOUT,
 )
-async def extract_detalhes_deputados(
+async def extract_detalhes_deputados_camara(
     deputados_ids: list[int],
+    lote_id: int,
     out_dir: str | Path = APP_SETTINGS.CAMARA.OUTPUT_EXTRACT_DIR,
 ) -> str:
     logger = get_run_logger()
@@ -39,6 +40,7 @@ async def extract_detalhes_deputados(
         follow_pagination=False,
         logger=logger,
         validate_results=True,
+        task="extract_detalhes_deputados_camara",
     )
 
     await acreate_table_artifact(

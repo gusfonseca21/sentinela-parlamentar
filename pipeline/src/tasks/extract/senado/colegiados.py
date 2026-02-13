@@ -11,12 +11,13 @@ APP_SETTINGS = load_config()
 
 
 @task(
-    task_run_name="extract_senado_colegiados",
+    task_run_name="extract_colegiados_senado",
     retries=APP_SETTINGS.SENADO.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.SENADO.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.SENADO.TASK_TIMEOUT,
 )
 def extract_colegiados(
+    lote_id: int,
     out_dir: str = APP_SETTINGS.SENADO.OUTPUT_EXTRACT_DIR,
 ) -> str:
     logger = get_run_logger()
