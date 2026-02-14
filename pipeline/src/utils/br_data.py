@@ -1,5 +1,3 @@
-from datetime import datetime
-
 BR_UFS = [
     "AC",
     "AL",

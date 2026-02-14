@@ -37,6 +37,12 @@ def extract_votacao(
         f"Fazendo download das tabelas de resultado de votação da eleição de {year}: {url}"
     )
 
-    _tmp_zip_dest_path = download_stream(url, file_dest_path, unzip=True)
+    _tmp_zip_dest_path = download_stream(
+        url=url,
+        dest_path=file_dest_path,
+        unzip=True,
+        task=f"extract_tse_votacao_{year}",
+        lote_id=lote_id,
+    )
 
     return str(dir_dest_path)

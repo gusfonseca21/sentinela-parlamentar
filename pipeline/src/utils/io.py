@@ -9,10 +9,15 @@ from pathlib import Path
 from typing import Any
 
 import httpx
+from prefect.logging import get_logger
 
+from config.loader import load_config
 from config.request_headers import headers
+from database.repository.erros_extract import insert_extract_error_db
 
-from .log import get_prefect_logger_or_none
+APP_SETTINGS = load_config()
+
+logger = get_logger()
 
 
 # Garante que o caminho exista
@@ -25,10 +30,12 @@ def ensure_dir(path: str | Path) -> Path:
 # Download de arquivos zip em streaming por conta dos arquivos pesados
 def download_stream(
     url: str,
+    lote_id: int,
+    task: str,
     dest_path: str | Path,
     unzip: bool = False,
     timeout: float = 60.0,
-    max_retries: int = 10,
+    max_retries: int = APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
 ) -> str | None:
     """
     Faça o download de um arquivo em stream e opcionalmente extrai os arquivos, caso seja um ZIP.
@@ -57,15 +64,32 @@ def download_stream(
                 else:
                     return str(dest_path)
         except Exception as e:
+            status_code = (
+                e.response.status_code if isinstance(e, httpx.HTTPStatusError) else None
+            )
+
             print(
                 f"Erro ao tentar baixar arquivos por stream, tentativa {attempt}: {e}"
             )
             if attempt < max_retries - 1:
                 time.sleep(2**attempt)
             else:
-                raise Exception(
-                    f"Falha ao baixar o recurso {url} após {max_retries} tentativas: {e}"
-                )
+                # Não damos raise na exceção pois daremos um tratamento próprio para as URLs que não foram baixadas
+                message = f"Falha ao baixar o recurso {url} após {max_retries} tentativas: {e}"
+                logger.error(message)
+
+                try:
+                    insert_extract_error_db(
+                        lote_id=lote_id,
+                        task=task,
+                        status_code=status_code,
+                        message=str(e),
+                        url=url,
+                    )
+                except Exception as e:
+                    logger.critical(
+                        f"Erro ao tentar inserir o erro da URL {url} no banco de dados: {e}"
+                    )
 
 
 def unzip_file(zip_path: str | Path) -> list[str]:
@@ -86,20 +110,12 @@ def fetch_json(
     url: str,
     timeout: float = 30.0,
     max_retries: int = 10,
-    logger: Any | None = None,
 ) -> dict | list | None:
     """
     Busca um JSON a partir da URL e retorna o objeto em memória
     """
-    logger = logger or get_prefect_logger_or_none()
 
-    def log(msg: str):
-        if logger:
-            logger.warning(msg)
-        else:
-            print(msg)
-
-    log(f"Baixando URL: {url}")
+    logger.info(f"Baixando URL: {url}")
 
     with httpx.Client(
         timeout=timeout, follow_redirects=True, headers=headers
@@ -111,13 +127,15 @@ def fetch_json(
                 return r.json()
             except Exception as e:
                 if attempt < max_retries - 1:
-                    log(
+                    logger.warning(
                         f"Um erro ocorreu no fetch de dados: {e}. TENTANDO NOVAMENTE. Tentativa: {attempt}"
                     )
                     time.sleep(2**attempt)
                 else:
                     message = f"Erro ao baixar recurso da url {url} após {max_retries} tentativas: {e}"
-                    log(message)
+                    logger.error(message)
+
+                    # Aqui jogamos o erro pois normalmente as tasks necessitam dos dados de dados que são baixados de um único JSON.
                     raise Exception(message)
 
 
@@ -179,22 +197,16 @@ def merge_ndjson(inputs: list[str | Path], dest: str | Path) -> str:
 
 async def fetch_html_many_async(
     urls: list[str],
+    lote_id: int,
+    task: str,
     out_dir: str | Path | None = None,
     limit: int = 10,
     timeout: int = 1800,
     max_retries: int = 10,
-    logger: Any | None = None,
 ) -> list[str | None]:
     """
     Faz o download de páginas HTML
     """
-    logger = logger or get_prefect_logger_or_none()
-
-    def log(msg: str):
-        if logger:
-            logger.info(msg)
-        else:
-            print(msg)
 
     sem = asyncio.Semaphore(limit)
     timeout_cfg = httpx.Timeout(timeout)
@@ -211,7 +223,7 @@ async def fetch_html_many_async(
         async with sem:
             for attempt in range(max_retries):
                 try:
-                    log(f"Fazendo download da URL: {u}")
+                    logger.info(f"Fazendo download da URL: {u}")
                     r = await client.get(u)
                     r.raise_for_status()
 
@@ -229,16 +241,34 @@ async def fetch_html_many_async(
                     return html_content
 
                 except Exception as e:
+                    status_code = (
+                        e.response.status_code
+                        if isinstance(e, httpx.HTTPStatusError)
+                        else None
+                    )
+
                     if attempt < max_retries - 1:
-                        log(
+                        logger.warning(
                             f"Um erro ocorreu ao baixar uma página HTML: {e}. TENTANDO NOVAMENTE. Tentativa: {attempt}"
                         )
                         await asyncio.sleep(2**attempt)
                     else:
-                        log(
+                        logger.error(
                             f"Falha permanente ao baixar {u} após {max_retries} tentativas: {e}"
                         )
-                        raise
+
+                        try:
+                            insert_extract_error_db(
+                                lote_id=lote_id,
+                                task=task,
+                                status_code=status_code,
+                                message=str(e),
+                                url=u,
+                            )
+                        except Exception as e:
+                            logger.critical(
+                                f"Erro ao tentar inserir o erro da URL {u} no banco de dados: {e}"
+                            )
 
     async with httpx.AsyncClient(timeout=timeout_cfg, follow_redirects=True) as client:
         tasks = [fetch(u, client) for u in urls]

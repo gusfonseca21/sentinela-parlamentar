@@ -56,24 +56,14 @@ async def fetch_many_jsons(
             async with semaphore:
                 print(f"Baixando URL: {url=}")
 
-                status_code = None
-                request_message = None
+                # status_code = None
+                # request_message = None
 
                 for attempt in range(max_retries):
                     try:
                         response = await client.get(url, timeout=timeout)
 
                         status_code = response.status_code
-
-                        if status_code >= 400:
-                            try:
-                                error_response = response.json()
-                                if error_response.get("detail", None):
-                                    request_message = error_response.get("detail", None)
-                                else:
-                                    request_message = response.json()
-                            except Exception:
-                                request_message = response.text
 
                         response.raise_for_status()
 
@@ -122,21 +112,25 @@ async def fetch_many_jsons(
                             logger.error(message)
 
                             try:
+                                status_code = (
+                                    e.response.status_code
+                                    if isinstance(e, httpx.HTTPStatusError)
+                                    else None
+                                )
+
                                 insert_extract_error_db(
                                     lote_id=lote_id,
                                     task=task,
                                     status_code=status_code,
-                                    message=request_message,
+                                    message=str(e),
                                     url=url,
                                 )
                             except Exception as e:
+                                # Não damos raise aqui pois daremos um tratamento próprio para as URLs que não foram baixadas
                                 logger.critical(
-                                    f"Erro ao tentar inserir o erro da URL {url} no banco de dados"
+                                    f"Erro ao tentar inserir o erro da URL {url} no banco de dados: {e}"
                                 )
                                 db_errors.append(url)
-
-                            ## Não deve levantar o erro. Lidaremos com as URLs problemáticas separadamente
-                            # raise Exception(message)
 
     queue = asyncio.Queue()
 
@@ -182,6 +176,7 @@ async def fetch_many_jsons(
         )
 
     if db_errors:
+        # Se der erro na hora de criar o registro, damos Raise para avisar
         raise Exception(
             f"Houve erro na inserção de {len(db_errors)} erros de URLs no banco de dados"
         )

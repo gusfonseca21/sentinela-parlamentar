@@ -37,7 +37,13 @@ def extract_candidatos(
         f"Fazendo download da lista de candidatos do TSE da eleição de {year}: {url}"
     )
 
-    _tmp_zip_dest_path = download_stream(url, file_dest_path, unzip=True)
+    _tmp_zip_dest_path = download_stream(
+        url=url,
+        dest_path=file_dest_path,
+        unzip=True,
+        lote_id=lote_id,
+        task=f"extract_tse_candidatos_{year}",
+    )
 
     logger.info(dir_dest_path)
 

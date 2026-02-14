@@ -13,9 +13,10 @@ def insert_extract_error_db(
     Cria um novo registro na tabela erros_extract de uma URL que não pôde ser baixada.
     Recebe como argumento o nome da task, o código de status de erro, a mensagem de erro e a URL
     """
+    # try:
     with get_connection() as conn:
         stmt = insert(erros_extract).values(
-            lote_i=lote_id,
+            lote_id=lote_id,
             task=task,
             status_code=status_code,
             mensagem=message,

@@ -37,7 +37,7 @@ async def test_fetch_html_many_async(urls_paginas_html_deputados):
     urls = urls_paginas_html_deputados
     expected_count = len(urls_paginas_html_deputados)
 
-    results = await fetch_html_many_async(urls=urls)
+    results = await fetch_html_many_async(urls=urls, lote_id=9999, task="teste")
 
     items_downloaded = len(results)
 

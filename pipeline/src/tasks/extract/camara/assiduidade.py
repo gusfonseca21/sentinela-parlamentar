@@ -49,8 +49,9 @@ async def extract_assiduidade_camara(
     htmls = await fetch_html_many_async(
         urls=urls,
         limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
-        logger=logger,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
+        lote_id=lote_id,
+        task="extract_assiduidade_camara",
     )
 
     href_pattern = re.compile(r"https://www\.camara\.leg\.br/deputados/\d+")

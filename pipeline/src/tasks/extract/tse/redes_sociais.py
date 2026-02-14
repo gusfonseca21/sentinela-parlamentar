@@ -38,6 +38,12 @@ def extract_redes_sociais(
         f"Fazendo download das tabelas de redes sociais dos candidatos do estado {uf} da eleição de {year}: {url}"
     )
 
-    _tmp_zip_dest_path = download_stream(url, file_dest_path, unzip=True)
+    _tmp_zip_dest_path = download_stream(
+        url=url,
+        dest_path=file_dest_path,
+        unzip=True,
+        task=f"extract_tse_redes_sociais_{uf}_{year}",
+        lote_id=lote_id,
+    )
 
     return str(dir_dest_path)
