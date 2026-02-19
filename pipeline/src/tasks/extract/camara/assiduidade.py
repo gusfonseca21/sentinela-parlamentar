@@ -8,15 +8,23 @@ from prefect.artifacts import acreate_table_artifact
 from selectolax.parser import HTMLParser
 
 from config.loader import load_config
+from database.repository.erros_extract import verify_not_downloaded_urls_in_task_db
 from utils.io import fetch_html_many_async, save_ndjson
 
 APP_SETTINGS = load_config()
+
+TASK_NAME = "extract_assiduidade_camara"
 
 
 def assiduidade_urls(
     deputados_ids: list[int], start_date: date, end_date: date
 ) -> list[str]:
     urls = set()
+    not_downloaded_urls = verify_not_downloaded_urls_in_task_db(TASK_NAME)
+
+    if not_downloaded_urls:
+        urls.update(not_downloaded_urls)
+
     for id in deputados_ids:
         for year in range(start_date.year, end_date.year + 1):
             urls.add(
@@ -26,7 +34,7 @@ def assiduidade_urls(
 
 
 @task(
-    task_run_name="extract_assiduidade_camara",
+    task_run_name=TASK_NAME,
     retries=APP_SETTINGS.CAMARA.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.CAMARA.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.CAMARA.TASK_TIMEOUT,
@@ -44,6 +52,7 @@ async def extract_assiduidade_camara(
     logger = get_run_logger()
 
     urls = assiduidade_urls(deputados_ids, start_date, end_date)
+
     logger.info(f"Câmara: buscando assiduidade de {len(deputados_ids)}.")
 
     htmls = await fetch_html_many_async(
@@ -51,7 +60,7 @@ async def extract_assiduidade_camara(
         limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         lote_id=lote_id,
-        task="extract_assiduidade_camara",
+        task=TASK_NAME,
     )
 
     href_pattern = re.compile(r"https://www\.camara\.leg\.br/deputados/\d+")

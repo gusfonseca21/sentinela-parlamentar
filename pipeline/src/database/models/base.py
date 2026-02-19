@@ -33,7 +33,8 @@ class Lote(Base):
     flows_ignoradas = sa.Column(sa.String(25), nullable=True)
     tasks_ignoradas = sa.Column(sa.String(1500), nullable=True)
     resetar_cache = sa.Column(sa.Boolean, nullable=False)
-    mensagem = sa.Column(sa.String(256), nullable=True)
+    mensagem = sa.Column(sa.Text, nullable=True)
+    urls_nao_baixadas = sa.Column(sa.Boolean, nullable=False, server_default=sa.false())
 
 
 class ErrosExtract(Base):
@@ -49,4 +50,4 @@ class ErrosExtract(Base):
     )
     status_code = sa.Column(sa.Integer, nullable=True)
     mensagem = sa.Column(sa.String(500), nullable=True)
-    url = sa.Column(sa.Text, nullable=False)
+    url = sa.Column(sa.Text, nullable=False, unique=True)
