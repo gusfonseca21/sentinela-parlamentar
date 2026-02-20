@@ -5,7 +5,11 @@ import httpx
 from prefect.logging import get_logger
 
 from config.request_headers import headers
-from database.repository.erros_extract import insert_extract_error_db
+from database.models.base import ErrorExtract
+from database.repository.erros_extract import (
+    insert_extract_error_db,
+    update_not_downloaded_urls_db,
+)
 
 from .io import ensure_dir
 from .url_utils import alter_query_param_value, get_query_param_value, is_first_page
@@ -16,6 +20,7 @@ logger = get_logger()
 # Armazena em memória ou grava em disco uma lista de JSONs
 async def fetch_many_jsons(
     urls: list[str],
+    not_downloaded_urls: list[ErrorExtract],
     task: str,
     lote_id: int,
     out_dir: str | Path | None = None,
@@ -85,6 +90,19 @@ async def fetch_many_jsons(
                             # results.append(str(path))
                         else:
                             results.append(data)
+
+                            # Verificar e atualizar no banco de dados as urls com falhas
+                            failed_urls = {
+                                error.url: error for error in not_downloaded_urls
+                            }
+                            if failed_urls:
+                                try:
+                                    update_url_not_downloaded(url, failed_urls)
+                                except Exception as e:
+                                    logger.critical(
+                                        f"Não foi possível atualizar o registro de URL baixada no banco de dados: {e}"
+                                    )
+                                    db_errors.append(url)
 
                         # Se tiver paginação, adiciona novas URLs à fila
                         if follow_pagination and "links" in data:
@@ -243,3 +261,13 @@ def validate(
         raise Exception(
             f"ERRO: O NÚMERO DE ITENS BAIXADOS É DIFERENTE DO NÚMERO TOTAL:\n Baixados: {downloaded_items}/{stats['total_items']}"
         )
+
+
+def update_url_not_downloaded(url: str, failed_urls: dict[str, ErrorExtract]):
+    """
+    Atualiza no banco de dados o registro da URL que não havia sido baixada
+    """
+
+    if url in failed_urls:
+        error = failed_urls[url]
+        update_not_downloaded_urls_db(error.id)

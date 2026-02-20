@@ -1,8 +1,10 @@
-from sqlalchemy import delete, update
+from datetime import datetime, timezone
+
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 
 from database.engine import get_connection
-from database.models.base import ErrosExtract, Lote
+from database.models.base import ErrorExtract, ErrosExtract, Lote
 
 erros_extract = ErrosExtract.__table__
 lote = Lote.__table__
@@ -39,18 +41,33 @@ def insert_extract_error_db(
         conn.execute(stmt_lote)
 
 
-def verify_not_downloaded_urls_in_task_db(task: str) -> list[str]:
+def verify_not_downloaded_urls_in_task_db(task: str) -> list[ErrorExtract]:
     """
     Verifica se existem URLs que falharam ao serem baixadas em lotes anteriores por task.
     Retorna uma lista de URLs para serem baixadas novamente.
     Exclui da tabela os registros retornados.
     """
     with get_connection() as conn:
-        stmt = (
-            delete(erros_extract)
-            .where(erros_extract.c.task == task)
-            .returning(erros_extract.c.url)
+        stmt = select(erros_extract.c.id, erros_extract.c.url).where(
+            erros_extract.c.task == task
         )
         result = conn.execute(stmt)
 
-    return [row.url for row in result]
+        rows = result.fetchall()
+
+        return [ErrorExtract(id=row.id, url=row.url) for row in rows]
+
+
+def update_not_downloaded_urls_db(error_id: int):
+    """
+    Atualiza o registro no banco de dados da URL que havia falhado na hora de baixar.
+    Atualiza a coluna "baixado" e "data_baixado"
+    """
+    with get_connection() as conn:
+        stmt = (
+            update(erros_extract)
+            .where(erros_extract.c.id == error_id)
+            .values(baixado=True, data_baixado=datetime.now(timezone.utc))
+        )
+
+        conn.execute(stmt)

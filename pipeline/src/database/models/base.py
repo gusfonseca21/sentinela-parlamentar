@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 import sqlalchemy as sa
 from pydantic.dataclasses import dataclass
 from sqlalchemy.ext.declarative import declarative_base
@@ -12,6 +14,19 @@ class PipelineParams:
     ignore_tasks: list[str]
     ignore_flows: list[str]
     message: str | None
+
+
+# Atenção, não é utilizado para Migrations
+@dataclass
+class ErrorExtract:
+    id: int
+    url: str
+
+
+# Utilizado para o retorno das funções de URL nas tasks
+class UrlsResult(TypedDict):
+    urls_to_download: list[str]
+    not_downloaded_urls: list[ErrorExtract]
 
 
 class Lote(Base):
@@ -31,7 +46,7 @@ class Lote(Base):
     )
     data_fim_extract = sa.Column(sa.Date, nullable=False)
     flows_ignoradas = sa.Column(sa.String(25), nullable=True)
-    tasks_ignoradas = sa.Column(sa.String(1500), nullable=True)
+    tasks_ignoradas = sa.Column(sa.Text, nullable=True)
     resetar_cache = sa.Column(sa.Boolean, nullable=False)
     mensagem = sa.Column(sa.Text, nullable=True)
     urls_nao_baixadas = sa.Column(sa.Boolean, nullable=False, server_default=sa.false())
@@ -49,5 +64,7 @@ class ErrosExtract(Base):
         server_default=sa.func.now(),
     )
     status_code = sa.Column(sa.Integer, nullable=True)
-    mensagem = sa.Column(sa.String(500), nullable=True)
+    mensagem = sa.Column(sa.Text, nullable=True)
     url = sa.Column(sa.Text, nullable=False, unique=True)
+    baixado = sa.Column(sa.Boolean, nullable=False, server_default=sa.false())
+    data_baixado = sa.Column(sa.DateTime(timezone=True), nullable=True)
