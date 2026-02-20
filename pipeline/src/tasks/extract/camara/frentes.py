@@ -38,6 +38,7 @@ async def extract_frentes_camara(
 
     jsons = await fetch_many_jsons(
         urls=[url],
+        not_downloaded_urls=[],
         limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         follow_pagination=True,

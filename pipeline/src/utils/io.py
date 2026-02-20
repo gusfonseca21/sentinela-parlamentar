@@ -13,7 +13,11 @@ from prefect.logging import get_logger
 
 from config.loader import load_config
 from config.request_headers import headers
-from database.repository.erros_extract import insert_extract_error_db
+from database.models.base import ErrorExtract
+from database.repository.erros_extract import (
+    insert_extract_error_db,
+    update_not_downloaded_urls_db,
+)
 
 APP_SETTINGS = load_config()
 
@@ -197,6 +201,7 @@ def merge_ndjson(inputs: list[str | Path], dest: str | Path) -> str:
 
 async def fetch_html_many_async(
     urls: list[str],
+    not_downloaded_urls: list[ErrorExtract],
     lote_id: int,
     task: str,
     out_dir: str | Path | None = None,
@@ -238,6 +243,20 @@ async def fetch_html_many_async(
                             f.write(html_content)
                         return str(path)  # Se salvar, retorna o caminho
 
+                    # Verificar e atualizar no banco de dados as urls com falhas
+                    failed_urls = {error.url: error for error in not_downloaded_urls}
+
+                    if failed_urls:
+                        try:
+                            update_url_not_downloaded(
+                                lote_id=lote_id, url=u, failed_urls=failed_urls
+                            )
+                        except Exception as e:
+                            logger.critical(
+                                f"Não foi possível atualizar o registro de URL baixada no banco de dados: {e}"
+                            )
+                            raise
+
                     return html_content
 
                 except Exception as e:
@@ -269,6 +288,7 @@ async def fetch_html_many_async(
                             logger.critical(
                                 f"Erro ao tentar inserir o erro da URL {u} no banco de dados: {e}"
                             )
+                            raise
 
     async with httpx.AsyncClient(timeout=timeout_cfg, follow_redirects=True) as client:
         tasks = [fetch(u, client) for u in urls]
@@ -279,3 +299,15 @@ async def fetch_html_many_async(
         ]
 
     return valid_results
+
+
+def update_url_not_downloaded(
+    lote_id: int, url: str, failed_urls: dict[str, ErrorExtract]
+):
+    """
+    Atualiza no banco de dados o registro da URL que não havia sido baixada
+    """
+
+    if url in failed_urls:
+        error = failed_urls[url]
+        update_not_downloaded_urls_db(lote_id=lote_id, error_id=error.id)

@@ -47,6 +47,7 @@ async def extract_votacoes_senado(
 
     jsons = await fetch_many_jsons(
         urls=urls,
+        not_downloaded_urls=[],
         limit=APP_SETTINGS.SENADO.FETCH_LIMIT,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         follow_pagination=False,

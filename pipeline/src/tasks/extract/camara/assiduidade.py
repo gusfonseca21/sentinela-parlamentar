@@ -8,6 +8,7 @@ from prefect.artifacts import acreate_table_artifact
 from selectolax.parser import HTMLParser
 
 from config.loader import load_config
+from database.models.base import UrlsResult
 from database.repository.erros_extract import verify_not_downloaded_urls_in_task_db
 from utils.io import fetch_html_many_async, save_ndjson
 
@@ -18,19 +19,22 @@ TASK_NAME = "extract_assiduidade_camara"
 
 def assiduidade_urls(
     deputados_ids: list[int], start_date: date, end_date: date
-) -> list[str]:
+) -> UrlsResult:
     urls = set()
     not_downloaded_urls = verify_not_downloaded_urls_in_task_db(TASK_NAME)
 
     if not_downloaded_urls:
-        urls.update(not_downloaded_urls)
+        urls.update([error.url for error in not_downloaded_urls])
 
     for id in deputados_ids:
         for year in range(start_date.year, end_date.year + 1):
             urls.add(
                 f"{APP_SETTINGS.CAMARA.PORTAL_BASE_URL}deputados/{id}/presenca-plenario/{year}"
             )
-    return list(urls)
+
+    return UrlsResult(
+        urls_to_download=list(urls), not_downloaded_urls=not_downloaded_urls
+    )
 
 
 @task(
@@ -56,7 +60,8 @@ async def extract_assiduidade_camara(
     logger.info(f"Câmara: buscando assiduidade de {len(deputados_ids)}.")
 
     htmls = await fetch_html_many_async(
-        urls=urls,
+        urls=urls["urls_to_download"],
+        not_downloaded_urls=urls["not_downloaded_urls"],
         limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         lote_id=lote_id,

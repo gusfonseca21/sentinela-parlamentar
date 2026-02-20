@@ -67,4 +67,5 @@ class ErrosExtract(Base):
     mensagem = sa.Column(sa.Text, nullable=True)
     url = sa.Column(sa.Text, nullable=False, unique=True)
     baixado = sa.Column(sa.Boolean, nullable=False, server_default=sa.false())
-    data_baixado = sa.Column(sa.DateTime(timezone=True), nullable=True)
+    data_hora_baixado = sa.Column(sa.DateTime(timezone=True), nullable=True)
+    lote_baixado = sa.Column(sa.Integer, nullable=True)

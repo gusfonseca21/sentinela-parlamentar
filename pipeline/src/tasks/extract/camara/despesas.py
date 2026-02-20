@@ -6,6 +6,7 @@ from prefect import get_run_logger, task
 from prefect.artifacts import acreate_table_artifact
 
 from config.loader import load_config
+from database.models.base import UrlsResult
 from database.repository.erros_extract import verify_not_downloaded_urls_in_task_db
 from utils.fetch_many_jsons import fetch_many_jsons
 from utils.io import save_ndjson
@@ -17,7 +18,7 @@ TASK_NAME = "extract_despesas_camara"
 
 def urls_despesas(
     deputados_ids: list[int], start_date: date, end_date: date
-) -> list[str]:
+) -> UrlsResult:
     """
     Gera URLs para cada deputado no período entre start_date e end_date.
     Utiliza o parâmetro ano como único parâmetro, se possível. Se não, ano + mês.
@@ -33,7 +34,7 @@ def urls_despesas(
     not_downloaded_urls = verify_not_downloaded_urls_in_task_db(TASK_NAME)
 
     if not_downloaded_urls:
-        urls.update(not_downloaded_urls)
+        urls.update([error.url for error in not_downloaded_urls])
 
     for id_deputado in deputados_ids:
         # If the range covers full years, use year-only URLs
@@ -89,7 +90,10 @@ def urls_despesas(
                 if current.month == 12:
                     break
                 current = date(current.year, current.month + 1, 1)
-    return list(urls)
+
+    return UrlsResult(
+        urls_to_download=list(urls), not_downloaded_urls=not_downloaded_urls
+    )
 
 
 @task(
@@ -112,7 +116,8 @@ async def extract_despesas_camara(
     logger.info(f"Câmara: buscando despesas de {len(urls)} URLs")
 
     jsons = await fetch_many_jsons(
-        urls=urls,
+        urls=urls["urls_to_download"],
+        not_downloaded_urls=urls["not_downloaded_urls"],
         limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
         follow_pagination=True,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,

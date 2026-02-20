@@ -5,6 +5,7 @@ from prefect import get_run_logger, task
 from prefect.artifacts import acreate_table_artifact
 
 from config.loader import load_config
+from database.models.base import UrlsResult
 from database.repository.erros_extract import verify_not_downloaded_urls_in_task_db
 from utils.fetch_many_jsons import fetch_many_jsons
 from utils.io import save_ndjson
@@ -14,17 +15,19 @@ APP_SETTINGS = load_config()
 TASK_NAME = "extract_detalhes_votacoes_camara"
 
 
-def detalhes_votacoes_urls(votacoes_ids: list[str]) -> list[str]:
+def detalhes_votacoes_urls(votacoes_ids: list[str]) -> UrlsResult:
     urls = set()
     not_downloaded_urls = verify_not_downloaded_urls_in_task_db(TASK_NAME)
 
     if not_downloaded_urls:
-        urls.update(not_downloaded_urls)
+        urls.update([error.url for error in not_downloaded_urls])
 
     for id in votacoes_ids:
         urls.add(f"{APP_SETTINGS.CAMARA.REST_BASE_URL}votacoes/{id}")
 
-    return list(urls)
+    return UrlsResult(
+        urls_to_download=list(urls), not_downloaded_urls=not_downloaded_urls
+    )
 
 
 @task(
@@ -45,7 +48,8 @@ async def extract_detalhes_votacoes_camara(
     logger.info(f"Baixando detalhes de votações da Câmara de {len(urls)} URLs")
 
     jsons = await fetch_many_jsons(
-        urls=urls,
+        urls=urls["urls_to_download"],
+        not_downloaded_urls=urls["not_downloaded_urls"],
         limit=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         follow_pagination=False,
         validate_results=True,

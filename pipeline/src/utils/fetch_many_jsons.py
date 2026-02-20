@@ -97,7 +97,11 @@ async def fetch_many_jsons(
                             }
                             if failed_urls:
                                 try:
-                                    update_url_not_downloaded(url, failed_urls)
+                                    update_url_not_downloaded(
+                                        lote_id=lote_id,
+                                        url=url,
+                                        failed_urls=failed_urls,
+                                    )
                                 except Exception as e:
                                     logger.critical(
                                         f"Não foi possível atualizar o registro de URL baixada no banco de dados: {e}"
@@ -263,11 +267,13 @@ def validate(
         )
 
 
-def update_url_not_downloaded(url: str, failed_urls: dict[str, ErrorExtract]):
+def update_url_not_downloaded(
+    lote_id: int, url: str, failed_urls: dict[str, ErrorExtract]
+):
     """
     Atualiza no banco de dados o registro da URL que não havia sido baixada
     """
 
     if url in failed_urls:
         error = failed_urls[url]
-        update_not_downloaded_urls_db(error.id)
+        update_not_downloaded_urls_db(lote_id=lote_id, error_id=error.id)

@@ -6,16 +6,26 @@ from prefect import get_run_logger, task
 from prefect.artifacts import acreate_table_artifact
 
 from config.loader import load_config
+from database.models.base import UrlsResult
+from database.repository.erros_extract import verify_not_downloaded_urls_in_task_db
 from utils.fetch_many_jsons import fetch_many_jsons
 from utils.io import save_ndjson
 from utils.url_utils import generate_date_urls_senado
 
 APP_SETTINGS = load_config()
 
+TASK_NAME = "extract_discursos_senado"
+
 
 def discursos_senadores_urls(
     senadores_ids: list[str], start_date: date, end_date: date
-) -> list[str] | None:
+) -> UrlsResult:
+    urls = set()
+    not_downloaded_urls = verify_not_downloaded_urls_in_task_db(TASK_NAME)
+
+    if not_downloaded_urls:
+        urls.update([error.url for error in not_downloaded_urls])
+
     # Baixar discursos até 1 mês atrás (podem demorar a entrarem no sistema)
     start_date = start_date - timedelta(days=30)
 
@@ -26,13 +36,17 @@ def discursos_senadores_urls(
     if base_urls_replaced is None:
         raise
 
-    return [
-        url.replace("%ID%", id) for url in base_urls_replaced for id in senadores_ids
-    ]
+    for url in base_urls_replaced:
+        for id in senadores_ids:
+            urls.add(url.replace("%ID%", id))
+
+    return UrlsResult(
+        urls_to_download=list(urls), not_downloaded_urls=not_downloaded_urls
+    )
 
 
 @task(
-    task_run_name="extract_discursos_senado",
+    task_run_name=TASK_NAME,
     retries=APP_SETTINGS.SENADO.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.SENADO.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.SENADO.TASK_TIMEOUT,
@@ -48,18 +62,16 @@ async def extract_discursos_senado(
 
     urls = discursos_senadores_urls(ids_senadores, start_date, end_date)
 
-    if urls is None:
-        raise
-
     logger.info(f"Baixando discursos de {len(urls)} urls")
 
     jsons = await fetch_many_jsons(
-        urls=urls,
+        urls=urls["urls_to_download"],
+        not_downloaded_urls=urls["not_downloaded_urls"],
         limit=APP_SETTINGS.SENADO.FETCH_LIMIT,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         follow_pagination=False,
         validate_results=False,
-        task="extract_discursos_senado",
+        task=TASK_NAME,
         lote_id=lote_id,
     )
 

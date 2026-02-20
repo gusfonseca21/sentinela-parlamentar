@@ -34,6 +34,7 @@ async def extract_proposicoes_camara(
 
     jsons = await fetch_many_jsons(
         urls=[url],
+        not_downloaded_urls=[],
         limit=APP_SETTINGS.CAMARA.FETCH_LIMIT,
         follow_pagination=True,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,

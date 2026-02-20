@@ -58,7 +58,7 @@ def verify_not_downloaded_urls_in_task_db(task: str) -> list[ErrorExtract]:
         return [ErrorExtract(id=row.id, url=row.url) for row in rows]
 
 
-def update_not_downloaded_urls_db(error_id: int):
+def update_not_downloaded_urls_db(error_id: int, lote_id: int):
     """
     Atualiza o registro no banco de dados da URL que havia falhado na hora de baixar.
     Atualiza a coluna "baixado" e "data_baixado"
@@ -67,7 +67,11 @@ def update_not_downloaded_urls_db(error_id: int):
         stmt = (
             update(erros_extract)
             .where(erros_extract.c.id == error_id)
-            .values(baixado=True, data_baixado=datetime.now(timezone.utc))
+            .values(
+                baixado=True,
+                data_hora_baixado=datetime.now(timezone.utc),
+                lote_baixado=lote_id,
+            )
         )
 
         conn.execute(stmt)

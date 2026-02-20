@@ -11,6 +11,8 @@ from utils.io import save_json
 
 APP_SETTINGS = load_config()
 
+TASK_NAME = "extract_processos_senado"
+
 
 def get_processos_url(start_date: date, end_date: date, logger: Any) -> list[str]:
     date_dif = end_date - start_date
@@ -32,7 +34,7 @@ def get_processos_url(start_date: date, end_date: date, logger: Any) -> list[str
 
 
 @task(
-    task_run_name="extract_processos_senado",
+    task_run_name=TASK_NAME,
     retries=APP_SETTINGS.SENADO.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.SENADO.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.SENADO.TASK_TIMEOUT,
@@ -51,11 +53,12 @@ async def extract_processos_senado(
 
     json = await fetch_many_jsons(
         urls=url,
+        not_downloaded_urls=[],
         limit=APP_SETTINGS.SENADO.FETCH_LIMIT,
         max_retries=APP_SETTINGS.ALLENDPOINTS.FETCH_MAX_RETRIES,
         follow_pagination=False,
         validate_results=False,
-        task="extract_processos_senado",
+        task=TASK_NAME,
         lote_id=lote_id,
     )
 
