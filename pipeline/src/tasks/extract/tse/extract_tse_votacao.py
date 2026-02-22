@@ -10,14 +10,19 @@ from utils.io import download_stream
 APP_SETTINGS = load_config()
 
 
+def cache_by_year(_ctx, params):
+    return f"extract_candidatos:{params['year']}"
+
+
 @task(
     name="Extract TSE Votação",
     task_run_name=TasksNames.EXTRACT_TSE_VOTACAO + "_{year}",
+    cache_key_fn=cache_by_year,
     description="Faz o download e gravação de tabelas de resultado de votação da eleição do TSE.",
     retries=APP_SETTINGS.TSE.TASK_RETRIES,
     retry_delay_seconds=APP_SETTINGS.TSE.TASK_RETRY_DELAY,
     timeout_seconds=APP_SETTINGS.TSE.TASK_TIMEOUT,
-    cache_policy=CACHE_POLICY_MAP[APP_SETTINGS.TSE.CACHE_POLICY],
+    # cache_policy=CACHE_POLICY_MAP[APP_SETTINGS.TSE.CACHE_POLICY],
     cache_expiration=timedelta(days=APP_SETTINGS.TSE.CACHE_EXPIRATION),
     log_prints=True,
 )

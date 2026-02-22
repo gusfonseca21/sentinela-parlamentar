@@ -2,6 +2,8 @@
 MAX_RUNNERS = 16 # Num. de threads abertas
 TASKS_RETURN_EXCEPTION = false # Em caso de exceção nas tasks de requisição, retorna algo em caso de erro (true) ou lança a exceçao (parando a aplicação) (false)
 DATE_LOOKBACK = 3 # Dias
+# DEBUG = 10 | INFO = 20 | WARNING = 30 | ERROR = 40 | CRITICAL = 50
+LOG_DB_LEVEL = 40
 
 [ALLENDPOINTS]
 FETCH_MAX_RETRIES=5

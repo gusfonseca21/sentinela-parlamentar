@@ -39,7 +39,7 @@ def extract_colegiados(
         json.get("ListaColegiados", {}).get("Colegiados", {}).get("Colegiado", [])
     )
 
-    logger.warning(num_colegiados)
+    logger.info(f"Número total de colegiados do Senado: {num_colegiados}")
 
     create_table_artifact(
         key="colegiados-senado",

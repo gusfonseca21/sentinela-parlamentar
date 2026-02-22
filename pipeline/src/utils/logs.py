@@ -1,12 +1,15 @@
 import asyncio
-from asyncio.tasks import sleep
+import logging
 from uuid import UUID
 
 from prefect.client.orchestration import get_client
 from prefect.client.schemas.filters import LogFilter, LogFilterFlowRunId, LogFilterLevel
-from prefect.client.schemas.sorting import LogSort
 
-from config.parameters import FlowsNames
+from config.loader import load_config
+from database.models.base import InsertLogDB
+from database.repository.logs import insert_log_db
+
+APP_SETTINGS = load_config()
 
 
 def save_logs(flow_run_name: str, flow_run_id: UUID, lote_id: int):
@@ -32,37 +35,68 @@ async def async_save_logs(
     Os logs da Flow Run só ficam disponíveis depois de um tempo, é necessário esperar.
     """
     async with get_client() as client:
+        # 1. Esperar logs chegarem
         num_logs_available = 0
         quiet = 0
         waited = 0
         while True:
-            # Fetch logs for this flow run (optionally filter WARNING+ with level=LogFilterLevel(ge_=30))
-            all_logs = await client.read_logs(
+            logs = await client.read_logs(
                 log_filter=LogFilter(
                     flow_run_id=LogFilterFlowRunId(any_=[flow_run_id]),
-                    # level=LogFilterLevel(ge_=10),
                 ),
-                # sort=LogSort.TIMESTAMP_ASC,
+                limit=1,  # só precisa saber a quantidade, não os logs em si
+                offset=0,
             )
-
-            num_logs_now = len(all_logs)
-
+            num_logs_now = len(logs)
             if num_logs_now == num_logs_available and num_logs_now > 0:
                 quiet += 1
             elif num_logs_now > num_logs_available:
                 quiet = 0
-
             num_logs_available = num_logs_now
-
             if quiet >= quiet_required:
                 break
-
             if waited >= timeout:
-                # Escape de segurança
                 break
-
             waited += sleep_required
             await asyncio.sleep(sleep_required)
 
+        # 2. Paginar e buscar todos os logs
+        all_logs = []
+        limit = 200
+        offset = 0
+        while True:
+            batch = await client.read_logs(
+                log_filter=LogFilter(
+                    flow_run_id=LogFilterFlowRunId(any_=[flow_run_id]),
+                    level=LogFilterLevel(ge_=APP_SETTINGS.FLOW.LOG_DB_LEVEL),
+                ),
+                limit=limit,
+                offset=offset,
+            )
+            all_logs.extend(batch)
+            if len(batch) < limit:
+                break
+            offset += limit
+
+        final_logs: list[InsertLogDB] = []
         for log in all_logs:
-            print(f"-->>{log.timestamp} [{log.level}] {log.message}")
+            task_run_name = None
+            if log.task_run_id:
+                task_run = await client.read_task_run(log.task_run_id)
+                task_run_name = task_run.name
+
+            final_logs.append(
+                InsertLogDB(
+                    lote_id=lote_id,
+                    timestamp=log.timestamp,
+                    flow_run_name=flow_run_name,
+                    task_run_name=task_run_name,
+                    level=logging.getLevelName(log.level),
+                    message=log.message,
+                )
+            )
+
+        print(f"All Logs: {len(all_logs)}")
+        print(f"Final Logs: {len(final_logs)}")
+
+        insert_log_db(final_logs)

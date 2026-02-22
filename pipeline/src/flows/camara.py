@@ -4,7 +4,7 @@ from prefect import flow, get_run_logger, task
 from prefect.futures import resolve_futures_to_results
 from prefect.runtime import flow_run
 
-from config.parameters import TasksNames
+from config.parameters import FlowsNames, TasksNames
 from tasks.extract.camara import (
     extract_assiduidade_camara,
     extract_autores_proposicoes_camara,
@@ -22,6 +22,7 @@ from tasks.extract.camara import (
     extract_votacoes_camara,
     extract_votos_votacoes_camara,
 )
+from utils.logs import save_logs
 
 
 @flow(
@@ -215,6 +216,12 @@ def camara_flow(
         resolve_futures_to_results(extract_camara_despesas_deputados_f)
 
     resolve_futures_to_results(extract_camara_assiduidade_f)
+
+    save_logs(
+        flow_run_name=FlowsNames.CAMARA.value,
+        flow_run_id=flow_run.id,
+        lote_id=lote_id,
+    )
 
     return
 

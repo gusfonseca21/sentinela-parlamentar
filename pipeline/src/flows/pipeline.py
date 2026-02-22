@@ -53,7 +53,7 @@ def pipeline(
         # "extract_senado_detalhes_processos",
         # "extract_senado_votacoes",
     ],
-    ignore_flows: list[str] = ["tse", "camara", "senado"],
+    ignore_flows: list[str] = ["tse", "camara"],
     message: str | None = None,
 ):
     logger = get_run_logger()
@@ -101,3 +101,5 @@ def pipeline(
         flow_run_id=flow_run.id,
         lote_id=lote_id,
     )
+
+    return

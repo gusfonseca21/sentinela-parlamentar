@@ -4,7 +4,7 @@ from prefect import flow, get_run_logger, task
 from prefect.futures import resolve_futures_to_results
 from prefect.runtime import flow_run
 
-from config.parameters import TasksNames
+from config.parameters import FlowsNames, TasksNames
 from tasks.extract.tse import (
     extract_candidatos,
     extract_prestacao_contas,
@@ -12,6 +12,7 @@ from tasks.extract.tse import (
     extract_votacao,
 )
 from utils.br_data import BR_UFS, get_election_years
+from utils.logs import save_logs
 
 
 @flow(
@@ -78,6 +79,12 @@ def tse_flow(
             extract_redes_sociais_f,
             extract_votacao_f,
         ]
+    )
+
+    save_logs(
+        flow_run_name=FlowsNames.TSE.value,
+        flow_run_id=flow_run.id,
+        lote_id=lote_id,
     )
 
     return results

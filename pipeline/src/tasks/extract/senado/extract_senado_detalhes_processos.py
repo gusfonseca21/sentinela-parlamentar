@@ -46,7 +46,7 @@ async def extract_detalhes_processos_senado(
 
     urls = get_detalhes_processos_url(ids_processos)
 
-    logger.info(f"Baixando detalhes de {len(urls)} processos")
+    logger.info(f"Baixando detalhes de {len(urls)} URLs de Detalhes de Processos")
 
     jsons = await fetch_many_jsons(
         urls=urls["urls_to_download"],

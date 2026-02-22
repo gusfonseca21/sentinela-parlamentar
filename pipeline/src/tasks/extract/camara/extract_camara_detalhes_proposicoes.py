@@ -46,7 +46,7 @@ async def extract_detalhes_proposicoes_camara(
 
     urls = detalhes_proposicoes_urls(proposicoes_ids)
 
-    logger.info(f"Baixando detalhes de {len(urls)} proposições da Câmara")
+    logger.info(f"Baixando detalhes de {len(urls)} URLs de Proposições da Câmara")
 
     jsons = await fetch_many_jsons(
         urls=urls["urls_to_download"],

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TypedDict
 
 import sqlalchemy as sa
@@ -21,6 +22,16 @@ class PipelineParams:
 class ErrorExtract:
     id: int
     url: str
+
+
+@dataclass
+class InsertLogDB:
+    lote_id: int
+    timestamp: datetime
+    flow_run_name: str
+    task_run_name: str | None
+    level: str
+    message: str
 
 
 # Utilizado para o retorno das funções de URL nas tasks
@@ -75,10 +86,9 @@ class Logs(Base):
     __tablename__ = "logs"
 
     id = sa.Column(sa.Integer, sa.Identity(start=1, cycle=False), primary_key=True)
-    lote_id = sa.Column(
-        sa.Integer, sa.ForeignKey("lote.id"), nullable=False, unique=True
-    )
+    lote_id = sa.Column(sa.Integer, sa.ForeignKey("lote.id"), nullable=False)
     data_hora = sa.Column(sa.DateTime(timezone=True), nullable=True)
     level = sa.Column(sa.String(24), nullable=False)
-    flow_run = sa.Column(sa.String(256), nullable=False)
+    flow_run_name = sa.Column(sa.String(256), nullable=False)
+    task_run_name = sa.Column(sa.String(256), nullable=True)
     mensagem = sa.Column(sa.Text, nullable=False)

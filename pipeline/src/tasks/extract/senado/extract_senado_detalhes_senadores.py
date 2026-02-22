@@ -47,7 +47,7 @@ async def extract_detalhes_senadores_senado(
 
     urls = detalhes_senadores_urls(ids_senadores)
 
-    logger.info(f"Baixando detalhes de {len(urls)} senadores")
+    logger.info(f"Baixando detalhes de {len(urls)} URLs de Senadores")
 
     jsons = await fetch_many_jsons(
         urls=urls["urls_to_download"],

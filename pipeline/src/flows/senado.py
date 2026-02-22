@@ -4,7 +4,7 @@ from prefect import flow, get_run_logger, task
 from prefect.futures import resolve_futures_to_results
 from prefect.runtime import flow_run
 
-from config.parameters import TasksNames
+from config.parameters import FlowsNames, TasksNames
 from tasks.extract.senado import (
     extract_colegiados,
     extract_despesas_senado,
@@ -15,6 +15,7 @@ from tasks.extract.senado import (
     extract_senadores_senado,
     extract_votacoes_senado,
 )
+from utils.logs import save_logs
 
 
 @flow(
@@ -87,7 +88,8 @@ def senado_flow(start_date: date, end_date: date, ignore_tasks: list[str], lote_
             ids_processos=extract_processos_senado_f,  # type: ignore
             lote_id=lote_id,
         )
-        resolve_futures_to_results(extract_detalhes_processos_senado_f)
+        # resolve_futures_to_results(extract_detalhes_processos_senado_f)
+        extract_detalhes_processos_senado_f.result()  # type: ignore
 
     ## VOTACOES
     extract_votacoes_senado_f = None
@@ -104,6 +106,14 @@ def senado_flow(start_date: date, end_date: date, ignore_tasks: list[str], lote_
             extract_votacoes_senado_f,
         ]
     )
+
+    save_logs(
+        flow_run_name=FlowsNames.SENADO.value,
+        flow_run_id=flow_run.id,
+        lote_id=lote_id,
+    )
+
+    return
 
 
 @task(

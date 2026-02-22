@@ -18,6 +18,7 @@ class FlowConfig(BaseModel):
     MAX_RUNNERS: int
     TASKS_RETURN_EXCEPTION: bool
     DATE_LOOKBACK: int
+    LOG_DB_LEVEL: int
 
 
 class AllEndpoints(BaseModel):
