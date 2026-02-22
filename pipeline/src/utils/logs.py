@@ -96,7 +96,4 @@ async def async_save_logs(
                 )
             )
 
-        print(f"All Logs: {len(all_logs)}")
-        print(f"Final Logs: {len(final_logs)}")
-
         insert_log_db(final_logs)

@@ -10,6 +10,9 @@ def insert_log_db(logs: list[InsertLogDB]):
     """
     Insere no banco de dados uma lista de Logs na tabela Logs.
     """
+    if not logs:
+        return
+
     with get_connection() as conn:
         stmt = insert(logs_t).values(
             [

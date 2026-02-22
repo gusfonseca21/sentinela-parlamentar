@@ -1,7 +1,6 @@
 from datetime import date
 
 from prefect import flow, get_run_logger, task
-from prefect.futures import resolve_futures_to_results
 from prefect.runtime import flow_run
 
 from config.parameters import FlowsNames, TasksNames
@@ -29,6 +28,8 @@ def tse_flow(
 
     elections_years = get_election_years(start_date.year)
 
+    futures = []
+
     # EXTRACT CANDIDATOS
     extract_candidatos_f = None
     if TasksNames.EXTRACT_TSE_CANDIDATOS not in ignore_tasks:
@@ -38,6 +39,7 @@ def tse_flow(
             )
             for year in elections_years
         ]  # Retorna lista de futures, que quando resolvidos retorna lista de strings
+        futures.extend(extract_candidatos_f)
 
     # EXTRACT PRESTAÇÃO DE CONTAS
     extract_prestacao_contas_f = None
@@ -48,6 +50,7 @@ def tse_flow(
             )
             for year in elections_years
         ]
+        futures.extend(extract_prestacao_contas_f)
 
     # EXTRACT REDES SOCIAIS
     extract_redes_sociais_f = None
@@ -60,6 +63,7 @@ def tse_flow(
             for uf in BR_UFS
             if not (uf == "DF" and year == 2018)
         ]
+        futures.extend(extract_redes_sociais_f)
 
     # EXTRACT VOTACAO
     extract_votacao_f = None
@@ -70,16 +74,11 @@ def tse_flow(
             )
             for year in elections_years
         ]
+        futures.extend(extract_votacao_f)
 
     # Results só é necessário para os úlitmos resultados das últimas tasks, que não são chamadas por nenhuma outra task, para finalizar o processo corretamente.
-    results = resolve_futures_to_results(
-        [
-            extract_candidatos_f,
-            extract_prestacao_contas_f,
-            extract_redes_sociais_f,
-            extract_votacao_f,
-        ]
-    )
+    for future in futures:
+        future.result()
 
     save_logs(
         flow_run_name=FlowsNames.TSE.value,
@@ -87,7 +86,7 @@ def tse_flow(
         lote_id=lote_id,
     )
 
-    return results
+    return
 
 
 @task(
